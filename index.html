@@ -3,17 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>QuickDnD Engine v2.0 - Epic Edition</title>
+  <title>QuickDnD Engine v2.1 - Master Edition</title>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lato:wght@400;700&display=swap" rel="stylesheet">
   <style>
-    /* GLOBAL STYLES */
     :root {
-      --bg-dark: #0d0d12;
-      --panel-bg: rgba(20, 20, 25, 0.95);
-      --border-gold: #c5a059;
-      --accent-glow: rgba(197, 160, 89, 0.5);
-      --health-red: #8b0000;
-      --text-main: #e0e0e0;
+      --bg-dark: #0f1015;
+      --panel-bg: #1a1b26;
+      --panel-border: #2e3146;
+      --accent-gold: #d4af37;
+      --accent-hover: #f1c40f;
+      --health-red: #e74c3c;
+      --xp-blue: #3498db;
+      --text-main: #ecf0f1;
       --font-epic: 'Cinzel', serif;
       --font-ui: 'Lato', sans-serif;
     }
@@ -21,585 +22,385 @@
     * { box-sizing: border-box; user-select: none; }
 
     body {
-      margin: 0;
-      padding: 0;
+      margin: 0; padding: 0; height: 100vh; width: 100vw;
+      background: var(--bg-dark); color: var(--text-main);
+      font-family: var(--font-ui); display: flex; overflow: hidden;
+    }
+
+    h1, h2, h3, h4 { font-family: var(--font-epic); margin: 0 0 10px 0; color: var(--accent-gold); }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-dark); }
+    ::-webkit-scrollbar-thumb { background: var(--panel-border); border-radius: 3px; }
+
+    /* LAYOUT */
+    #sidebar-container {
+      position: relative;
       height: 100vh;
-      width: 100vw;
-      overflow: hidden;
-      background: var(--bg-dark);
-      color: var(--text-main);
-      font-family: var(--font-ui);
+      z-index: 1000;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    #sidebar {
+      width: 360px;
+      height: 100%;
+      background: var(--panel-bg);
+      border-right: 2px solid var(--accent-gold);
       display: flex;
       flex-direction: column;
+      box-shadow: 5px 0 20px rgba(0,0,0,0.8);
+      overflow-y: auto;
+      padding: 10px;
+      gap: 15px;
     }
 
-    h1, h2, h3, h4 { font-family: var(--font-epic); margin: 0; color: var(--border-gold); text-shadow: 0 0 10px var(--accent-glow); }
-
-    /* CUSTOM SCROLLBAR */
-    ::-webkit-scrollbar { width: 8px; }
-    ::-webkit-scrollbar-track { background: #111; }
-    ::-webkit-scrollbar-thumb { background: var(--border-gold); border-radius: 4px; }
-
-    /* PRESENTATION MODE TOGGLE */
-    #top-bar {
+    #sidebar-toggle {
       position: absolute;
-      top: 10px;
-      right: 10px;
-      z-index: 1000;
+      top: 50%;
+      right: -30px;
+      width: 30px;
+      height: 60px;
+      background: var(--panel-bg);
+      border: 2px solid var(--accent-gold);
+      border-left: none;
+      color: var(--accent-gold);
       display: flex;
-      gap: 10px;
-      transition: opacity 0.3s ease;
-    }
-    .epic-btn {
-      background: linear-gradient(180deg, #2a2a35 0%, #1a1a24 100%);
-      border: 1px solid var(--border-gold);
-      color: var(--border-gold);
-      font-family: var(--font-epic);
-      padding: 8px 16px;
+      align-items: center;
+      justify-content: center;
       cursor: pointer;
-      border-radius: 4px;
+      border-radius: 0 8px 8px 0;
       font-weight: bold;
-      transition: all 0.2s ease;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+      box-shadow: 5px 0 10px rgba(0,0,0,0.5);
+      transform: translateY(-50%);
     }
-    .epic-btn:hover {
-      background: linear-gradient(180deg, #3a3a45 0%, #2a2a35 100%);
-      box-shadow: 0 0 15px var(--accent-glow);
-      transform: translateY(-2px);
-    }
-    .epic-btn:active { transform: translateY(0); }
 
-    /* MAP CONTAINER */
+    #sidebar-container.collapsed {
+      transform: translateX(-360px);
+    }
+
     #map-container {
       flex: 1;
       position: relative;
-      background: repeating-linear-gradient(45deg, #2e302b 0, #2e302b 20px, #262823 20px, #262823 40px);
+      background: #111;
       background-size: cover;
       background-position: center;
       overflow: hidden;
     }
 
-    /* SPRITES & PAWNS */
+    /* UI ELEMENTS */
+    .btn {
+      background: #2a2d3d; border: 1px solid var(--panel-border); color: var(--text-main);
+      padding: 6px 12px; border-radius: 4px; cursor: pointer; font-family: var(--font-ui);
+      transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center;
+    }
+    .btn:hover { background: #3a3e52; border-color: var(--accent-hover); color: white; }
+    .btn-gold { border-color: var(--accent-gold); color: var(--accent-gold); font-family: var(--font-epic); }
+    
+    .flex-row { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
+    .flex-between { display: flex; justify-content: space-between; align-items: center; }
+
+    .control-group {
+      background: rgba(0,0,0,0.3); border: 1px solid var(--panel-border);
+      border-radius: 6px; padding: 10px; margin-bottom: 5px;
+    }
+
+    /* MAP TABS */
+    #map-tabs { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 5px; }
+    .map-tab {
+      padding: 5px 10px; background: #222; border: 1px solid #444; border-radius: 4px;
+      cursor: pointer; white-space: nowrap; font-size: 12px;
+    }
+    .map-tab.active { background: var(--accent-gold); color: black; border-color: white; font-weight: bold; }
+
+    /* PLAYERS */
+    .player-card {
+      background: #1e202e; border-left: 4px solid; padding: 8px; border-radius: 4px; margin-bottom: 8px;
+    }
+    .stat-row { display: flex; align-items: center; justify-content: space-between; font-size: 14px; margin-top: 4px; }
+    .stat-ctrl { display: flex; align-items: center; gap: 8px; background: #111; padding: 2px 6px; border-radius: 4px; }
+    .stat-btn { background: transparent; border: none; color: white; cursor: pointer; font-size: 16px; font-weight: bold; }
+    .stat-btn:hover { color: var(--accent-hover); }
+    
+    .xp-bar-bg { width: 100px; height: 6px; background: #222; border-radius: 3px; overflow: hidden; margin-left: 5px; }
+    .xp-bar-fill { height: 100%; background: var(--xp-blue); width: 0%; transition: width 0.3s ease; }
+
+    /* SPINNER */
+    #spinner-readout {
+      height: 60px; background: #0a0a0e; border: 1px solid var(--accent-gold); border-radius: 6px;
+      display: flex; align-items: center; justify-content: center; font-family: var(--font-epic);
+      font-size: 18px; font-weight: bold; text-align: center; margin-top: 10px; box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+    }
+
+    /* TARGET / SELECTION PANEL */
+    #target-panel { display: none; border-color: var(--health-red); }
+    #target-panel.active { display: block; }
+
+    /* ASSET GRIDS */
+    .asset-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 5px;
+      max-height: 150px; overflow-y: auto; padding: 5px; background: rgba(0,0,0,0.2); border-radius: 4px;
+    }
+    .asset-item {
+      font-size: 24px; text-align: center; cursor: grab; padding: 5px; background: #2a2d3d;
+      border-radius: 4px; border: 1px solid transparent; transition: all 0.2s;
+    }
+    .asset-item:hover { border-color: var(--accent-gold); transform: scale(1.1); }
+
+    /* SPRITES ON MAP */
     .sprite {
-      position: absolute;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      cursor: grab;
-      filter: drop-shadow(0 10px 10px rgba(0,0,0,0.8));
-      transition: transform 0.1s ease-out;
-      z-index: 10;
+      position: absolute; display: flex; flex-direction: column; align-items: center;
+      cursor: grab; filter: drop-shadow(0 5px 5px rgba(0,0,0,0.8)); z-index: 10;
+      transform-origin: center bottom;
     }
     .sprite:active { cursor: grabbing; }
-    .sprite-emoji {
-      font-size: 64px;
-      line-height: 1;
-      transition: transform 0.2s;
-    }
+    .sprite.selected { filter: drop-shadow(0 0 10px var(--accent-gold)); z-index: 100; }
+    .sprite-emoji { font-size: 48px; line-height: 1; }
     .sprite-label {
-      font-family: var(--font-ui);
-      font-weight: bold;
-      font-size: 14px;
-      color: white;
-      background: rgba(0, 0, 0, 0.7);
-      padding: 2px 8px;
-      border-radius: 12px;
-      margin-top: -5px;
-      border: 1px solid rgba(255,255,255,0.2);
+      font-family: var(--font-ui); font-weight: bold; font-size: 12px; color: white;
+      background: rgba(0,0,0,0.7); padding: 2px 6px; border-radius: 8px; margin-top: 2px;
+      pointer-events: none; white-space: nowrap;
     }
     
-    /* ENEMY HP BAR */
-    .enemy-hp-container {
-      width: 100%;
-      height: 6px;
-      background: #000;
-      border: 1px solid #333;
-      border-radius: 3px;
-      margin-top: 5px;
-      overflow: hidden;
+    .hp-bar-container {
+      width: 40px; height: 6px; background: #000; border: 1px solid #333;
+      border-radius: 3px; margin-top: 4px; overflow: hidden; pointer-events: none;
     }
-    .enemy-hp-fill {
-      height: 100%;
-      background: var(--health-red);
-      width: 100%;
-      transition: width 0.3s ease;
-    }
-    
-    /* TARGETING RETICLE */
-    .targeting-mode .sprite.enemy:hover .sprite-emoji {
-      filter: drop-shadow(0 0 15px #ff0000);
-      transform: scale(1.1);
-      cursor: crosshair;
-    }
-
-    /* DAMAGE ANIMATION */
-    .damage-text {
-      position: absolute;
-      color: #ff3333;
-      font-family: var(--font-epic);
-      font-size: 32px;
-      font-weight: bold;
-      text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
-      pointer-events: none;
-      z-index: 1000;
-      animation: floatUpFade 1.5s forwards ease-out;
-    }
-    @keyframes floatUpFade {
-      0% { opacity: 1; transform: translateY(0) scale(1); }
-      50% { transform: translateY(-40px) scale(1.2); }
-      100% { opacity: 0; transform: translateY(-80px) scale(1); }
-    }
-    
-    .death-anim {
-      animation: deathFade 1s forwards;
-    }
-    @keyframes deathFade {
-      0% { filter: brightness(1) sepia(0); transform: scale(1); opacity: 1; }
-      50% { filter: brightness(0.5) sepia(1) hue-rotate(-50deg); transform: scale(1.1); }
-      100% { filter: brightness(0) sepia(1); transform: scale(0.5); opacity: 0; }
-    }
-
-    /* BOTTOM HUD */
-    #hud {
-      position: absolute;
-      bottom: 0;
-      width: 100%;
-      height: 280px;
-      background: var(--panel-bg);
-      border-top: 2px solid var(--border-gold);
-      display: flex;
-      flex-direction: column;
-      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 -10px 30px rgba(0,0,0,0.8);
-      z-index: 500;
-    }
-    #hud.hidden {
-      transform: translateY(100%);
-    }
-
-    .hud-header {
-      display: flex;
-      justify-content: space-between;
-      padding: 5px 15px;
-      background: rgba(0,0,0,0.5);
-      border-bottom: 1px solid #333;
-    }
-
-    .hud-layout {
-      display: flex;
-      flex: 1;
-      padding: 10px;
-      gap: 15px;
-      overflow: hidden;
-    }
-
-    /* PLAYERS SECTION */
-    #players-panel {
-      flex: 2;
-      display: flex;
-      gap: 10px;
-      overflow-x: auto;
-      padding-bottom: 10px;
-    }
-    .player-card {
-      min-width: 200px;
-      background: rgba(0,0,0,0.6);
-      border: 1px solid #444;
-      border-radius: 8px;
-      padding: 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-      position: relative;
-      overflow: hidden;
-    }
-    .player-card::before {
-      content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px;
-      background: var(--border-gold);
-    }
-    .p-stat-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 14px;
-    }
-    .p-stat-row input {
-      background: transparent; border: none; border-bottom: 1px solid #555;
-      color: white; width: 40px; text-align: right; font-family: var(--font-ui);
-    }
-    .p-name {
-      background: transparent; border: none; color: white; font-family: var(--font-epic);
-      font-size: 18px; font-weight: bold; width: 100%; margin-bottom: 5px;
-    }
-    .inventory-zone {
-      flex: 1;
-      background: rgba(255,255,255,0.05);
-      border: 1px dashed #555;
-      border-radius: 4px;
-      padding: 5px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 5px;
-      overflow-y: auto;
-      align-content: flex-start;
-    }
-    .inv-item {
-      font-size: 12px; background: #222; border: 1px solid #555;
-      padding: 2px 6px; border-radius: 10px; cursor: grab;
-    }
-
-    /* TOOLS & SPINNER SECTION */
-    #tools-panel {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      border-left: 1px solid #444;
-      border-right: 1px solid #444;
-      padding: 0 15px;
-    }
-    .spinner-row {
-      display: flex; flex-wrap: wrap; gap: 5px; justify-content: center;
-    }
-    .spin-btn {
-      background: #1a1a1a; border: 1px solid #555; color: #ccc;
-      padding: 8px; border-radius: 4px; cursor: pointer; flex: 1 1 30%;
-      font-family: var(--font-epic); transition: all 0.2s;
-    }
-    .spin-btn:hover { background: #333; color: white; border-color: var(--border-gold); }
-    .spin-btn.active { box-shadow: inset 0 0 10px var(--border-gold); border-color: var(--border-gold); color: var(--border-gold);}
-    
-    #spin-readout {
-      text-align: center;
-      font-family: var(--font-epic);
-      font-size: 20px;
-      height: 60px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(0,0,0,0.8);
-      border: 1px solid var(--border-gold);
-      border-radius: 4px;
-      color: var(--border-gold);
-      text-shadow: 0 0 8px var(--accent-glow);
-    }
-
-    /* BESTIARY & LOOT SECTION */
-    #bestiary-panel {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      padding-left: 5px;
-    }
-    .asset-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      overflow-y: auto;
-      align-content: flex-start;
-      flex: 1;
-    }
-    .asset-token {
-      width: 50px; height: 50px; background: rgba(0,0,0,0.6);
-      border: 1px solid #555; border-radius: 8px;
-      display: flex; justify-content: center; align-items: center;
-      font-size: 30px; cursor: grab; transition: border-color 0.2s;
-    }
-    .asset-token:hover { border-color: var(--border-gold); }
-    
-    .loot-row {
-      display: flex; gap: 5px;
-    }
-    .loot-btn {
-      flex: 1; padding: 8px 0; background: #222; border: 1px solid #444;
-      color: white; border-radius: 4px; cursor: pointer;
-    }
-    .loot-btn.avg { border-bottom: 3px solid #aaa; }
-    .loot-btn.good { border-bottom: 3px solid #4a90e2; }
-    .loot-btn.mythic { border-bottom: 3px solid #9013fe; }
-    .loot-btn:hover { filter: brightness(1.2); }
+    .hp-bar-fill { height: 100%; background: var(--health-red); width: 100%; transition: width 0.3s; }
 
   </style>
 </head>
 <body>
 
-  <div id="top-bar">
-    <button class="epic-btn" onclick="saveCampaignJSON()">💾 Export JSON</button>
-    <button class="epic-btn" onclick="document.getElementById('import-file').click()">📂 Import JSON</button>
-    <button class="epic-btn" id="presentation-toggle" onclick="togglePresentation()">📺 Present Mode</button>
-    <input type="file" id="import-file" style="display:none" accept=".json" onchange="importCampaignJSON(event)">
+  <div id="sidebar-container">
+    <div id="sidebar-toggle" onclick="toggleSidebar()">></div>
+    <div id="sidebar">
+      
+      <div class="control-group">
+        <div class="flex-between">
+          <h4>Maps</h4>
+          <div class="flex-row">
+            <button class="btn" onclick="addMap()">+ Map</button>
+            <button class="btn" onclick="cycleBackground()">🔄 BG</button>
+          </div>
+        </div>
+        <div id="map-tabs"></div>
+      </div>
+
+      <div id="target-panel" class="control-group">
+        <h4>Target Selected</h4>
+        <div class="flex-between" style="margin-bottom: 5px;">
+          <span id="target-name" style="font-weight:bold; color:var(--accent-hover);">None</span>
+          <div class="stat-ctrl">
+            Size: 
+            <button class="stat-btn" onclick="resizeTarget(-0.2)">-</button>
+            <span id="target-size-readout">1.0</span>
+            <button class="stat-btn" onclick="resizeTarget(0.2)">+</button>
+          </div>
+        </div>
+        <div class="flex-between" id="target-hp-controls" style="display:none;">
+          <div class="stat-ctrl">
+            HP:
+            <button class="stat-btn" onclick="modifyTargetHp(-1)">-</button>
+            <span id="target-hp-readout">10</span>
+            <button class="stat-btn" onclick="modifyTargetHp(1)">+</button>
+          </div>
+          <button class="btn" style="background:var(--health-red); color:white;" onclick="killAndLootTarget()">Kill & Loot</button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <h4>Action Spinner</h4>
+        <div class="flex-row" style="justify-content: center;">
+          <button class="btn btn-gold" onclick="spinWheel('Trivial', 5)">Trivial</button>
+          <button class="btn btn-gold" onclick="spinWheel('Easy', 10)">Easy</button>
+          <button class="btn btn-gold" onclick="spinWheel('Medium', 15)">Medium</button>
+          <button class="btn btn-gold" onclick="spinWheel('Hard', 20)">Hard</button>
+          <button class="btn btn-gold" onclick="spinWheel('Legend', 25)">Legend</button>
+        </div>
+        <div id="spinner-readout">Ready</div>
+      </div>
+
+      <div class="control-group">
+        <div class="flex-between">
+          <h4>Party</h4>
+          <button class="btn" onclick="addPlayer()">+ Player</button>
+        </div>
+        <div id="players-list"></div>
+      </div>
+
+      <div class="control-group">
+        <h4>Bestiary</h4>
+        <div class="asset-grid" id="grid-bestiary"></div>
+      </div>
+      <div class="control-group">
+        <h4>Environment & Items</h4>
+        <div class="asset-grid" id="grid-sprites"></div>
+      </div>
+
+      <button class="btn" style="width:100%; margin-top:auto;" onclick="saveStateFile()">💾 Save Campaign to File</button>
+
+    </div>
   </div>
 
-  <div id="map-container" ondragover="event.preventDefault()" ondrop="handleMapDrop(event)">
-    </div>
-
-  <div id="hud">
-    <div class="hud-header">
-      <h3>DM Command Hub</h3>
-      <span style="color:#888; font-size:12px;">Auto-saving to LocalStorage...</span>
-    </div>
-    
-    <div class="hud-layout">
-      <div id="players-panel">
-        <button class="epic-btn" onclick="addPlayer()" style="height:fit-content;">+ Add Player</button>
-        </div>
-
-      <div id="tools-panel">
-        <h4>Combat / Check Spinner</h4>
-        <div class="spinner-row">
-          <button class="spin-btn" onclick="runSpin('Trivial', 5)">Trivial</button>
-          <button class="spin-btn" onclick="runSpin('Easy', 10)">Easy</button>
-          <button class="spin-btn" onclick="runSpin('Medium', 15)">Medium</button>
-          <button class="spin-btn" onclick="runSpin('Hard', 20)">Hard</button>
-          <button class="spin-btn" onclick="runSpin('Legendary', 25)">Legendary</button>
-        </div>
-        <div id="spin-readout">Awaiting Action...</div>
-        <p style="font-size:12px; color:#aaa; margin:0; text-align:center;">
-          (Select target on map to apply damage)
-        </p>
-      </div>
-
-      <div id="bestiary-panel">
-        <h4>Assets & Loot</h4>
-        <div class="asset-list" id="bestiary-list">
-          </div>
-        <div class="loot-row">
-          <button class="loot-btn avg" onclick="generateLoot('average')">Average Loot</button>
-          <button class="loot-btn good" onclick="generateLoot('good')">Good Loot</button>
-          <button class="loot-btn mythic" onclick="generateLoot('mythic')">Mythic Loot</button>
-        </div>
-      </div>
-    </div>
+  <div id="map-container" ondragover="event.preventDefault()" ondrop="handleMapDrop(event)" onclick="handleMapClick(event)">
   </div>
 
   <script>
     /* ==========================================
-       DATA DICTIONARIES & CORE STATE
+       STATE & DATA
        ========================================== */
-    const GAME_KEY = 'quickdnd_v2_epic';
-    
-    let state = {
-      players: [],
-      entities: [], // Enemies/Items on map
-      mapBackground: 'repeating-linear-gradient(45deg, #2e302b 0, #2e302b 20px, #262823 20px, #262823 40px)'
-    };
-
-    let pendingDamage = 0; // Holds damage generated by spinner
-    let isTargeting = false; // True when damage is ready to be applied
-
-    const BESTIARY = [
-      { name: "Giant Rat", emoji: "🐀", baseHp: 8 },
-      { name: "Infernal Spider", emoji: "🕷️", baseHp: 15 },
-      { name: "Goblin Grunt", emoji: "👺", baseHp: 12 },
-      { name: "Orc Bruiser", emoji: "👹", baseHp: 25 },
-      { name: "Dark Cultist", emoji: "🧙", baseHp: 20 },
-      { name: "Dragon Hatchling", emoji: "🐉", baseHp: 50 },
-      { name: "Mimic", emoji: "📦", baseHp: 30 }
+    const BACKGROUNDS = [
+      'repeating-linear-gradient(45deg, #2e7d32 0, #2e7d32 20px, #388e3c 20px, #388e3c 40px)', // Grass
+      'repeating-linear-gradient(45deg, #555 0px, #555 15px, #444 15px, #444 30px)', // Stone
+      'repeating-linear-gradient(45deg, #8B5A2B 0px, #8B5A2B 15px, #6e3f1a 15px, #6e3f1a 30px)', // Wood
+      'repeating-linear-gradient(45deg, #c2b280 0px, #c2b280 20px, #b2a170 20px, #b2a170 40px)', // Sand
+      'repeating-linear-gradient(45deg, #2e302b 0, #2e302b 20px, #262823 20px, #262823 40px)' // Dark Grid
     ];
 
-    const ITEMS = {
-      average: [
-        { name: "Rusty Sword", emoji: "🗡️", dmgBonus: 1 },
-        { name: "Leather Scraps", emoji: "🛡️", dmgBonus: 0 },
-        { name: "Health Potion", emoji: "🧪", dmgBonus: 0 },
-        { name: "Gold Pouch", emoji: "💰", dmgBonus: 0 }
-      ],
-      good: [
-        { name: "Steel Broadsword", emoji: "⚔️", dmgBonus: 3 },
-        { name: "Kite Shield", emoji: "🛡️", dmgBonus: 0 },
-        { name: "Ranger Bow", emoji: "🏹", dmgBonus: 2 },
-        { name: "Ruby Ring", emoji: "💍", dmgBonus: 1 }
-      ],
-      mythic: [
-        { name: "Blade of Stars", emoji: "🗡️", dmgBonus: 6 },
-        { name: "Dragonscale", emoji: "🛡️", dmgBonus: 2 },
-        { name: "Amulet of Time", emoji: "⏳", dmgBonus: 4 },
-        { name: "Eye of the Void", emoji: "🔮", dmgBonus: 5 }
-      ]
+    const BESTIARY = [
+      { e: "🐀", n: "Giant Rat", hp: 6 }, { e: "🕷️", n: "Spider", hp: 12 },
+      { e: "🐺", n: "Dire Wolf", hp: 18 }, { e: "👺", n: "Goblin", hp: 15 },
+      { e: "💀", n: "Skeleton", hp: 12 }, { e: "🧟", n: "Zombie", hp: 20 },
+      { e: "👹", n: "Orc", hp: 30 }, { e: "🧛", n: "Vampire", hp: 50 },
+      { e: "🧙", n: "Cultist", hp: 22 }, { e: "🐉", n: "Dragon", hp: 100 }
+    ];
+
+    const SPRITES = [
+      { e: "🌳", n: "Tree" }, { e: "🌲", n: "Pine" }, { e: "🪨", n: "Rock" },
+      { e: "🪵", n: "Log" }, { e: "🔥", n: "Fire" }, { e: "⛺", n: "Tent" },
+      { e: "🧱", n: "Wall" }, { e: "🚪", n: "Door" }, { e: "📦", n: "Crate" },
+      { e: "宝", n: "Chest" }, { e: "🗡️", n: "Sword" }, { e: "🛡️", n: "Shield" },
+      { e: "🧪", n: "Potion" }, { e: "💰", n: "Gold" }, { e: "📜", n: "Scroll" }
+    ];
+
+    const SPINNER_OUTCOMES = [
+      { text: "Critical Success!", xp: 5, color: "#f1c40f" },
+      { text: "Success", xp: 3, color: "#2ecc71" },
+      { text: "Barely Passed", xp: 1, color: "#95a5a6" },
+      { text: "Barely Failed", xp: 0, color: "#e67e22" },
+      { text: "Failure", xp: 0, color: "#e74c3c" },
+      { text: "Catastrophic Failure", xp: 0, color: "#8b0000" }
+    ];
+
+    let state = {
+      maps: [{ id: 1, name: "Map 1", bgIndex: 0, entities: [] }],
+      currentMapId: 1,
+      players: [],
+      playerIdCounter: 1,
+      entityIdCounter: 1
     };
 
+    let selectedEntityId = null;
+
     /* ==========================================
-       INITIALIZATION & SAVE/LOAD
+       INITIALIZATION
        ========================================== */
     function init() {
-      loadFromStorage();
+      populateGrid('grid-bestiary', BESTIARY, 'bestiary');
+      populateGrid('grid-sprites', SPRITES, 'sprite');
+      renderTabs();
+      renderMap();
       renderPlayers();
-      renderBestiary();
-      renderMapEntities();
     }
 
-    function saveState() {
-      localStorage.setItem(GAME_KEY, JSON.stringify(state));
+    function toggleSidebar() {
+      const container = document.getElementById('sidebar-container');
+      const toggle = document.getElementById('sidebar-toggle');
+      container.classList.toggle('collapsed');
+      toggle.textContent = container.classList.contains('collapsed') ? '<' : '>';
     }
 
-    function loadFromStorage() {
-      const saved = localStorage.getItem(GAME_KEY);
-      if (saved) {
-        state = JSON.parse(saved);
-        // Ensure entity DOM references are cleared as they need rebuilding
-        state.entities.forEach(e => delete e.domElement);
-      } else {
-        // Default startup state
-        state = { players: [], entities: [], mapBackground: state.mapBackground };
-        addPlayer("Player 1", "🔴");
-      }
+    /* ==========================================
+       MAP & BACKGROUNDS
+       ========================================== */
+    function getActiveMap() {
+      return state.maps.find(m => m.id === state.currentMapId);
     }
 
-    function saveCampaignJSON() {
-      saveState(); // Ensure local is up to date
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
-      const a = document.createElement('a');
-      a.href = dataStr;
-      a.download = "EpicCampaign.json";
-      a.click();
+    function addMap() {
+      const newId = Date.now();
+      state.maps.push({ id: newId, name: `Map ${state.maps.length + 1}`, bgIndex: 0, entities: [] });
+      state.currentMapId = newId;
+      renderTabs();
+      renderMap();
     }
 
-    function importCampaignJSON(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = evt => {
-        try {
-          state = JSON.parse(evt.target.result);
-          saveState();
-          location.reload(); // Quickest way to clean DOM and rebuild
-        } catch (err) {
-          alert("Invalid JSON file.");
+    function switchMap(id) {
+      selectedEntityId = null;
+      updateTargetPanel();
+      state.currentMapId = id;
+      renderTabs();
+      renderMap();
+    }
+
+    function cycleBackground() {
+      const map = getActiveMap();
+      map.bgIndex = (map.bgIndex + 1) % BACKGROUNDS.length;
+      document.getElementById('map-container').style.background = BACKGROUNDS[map.bgIndex];
+    }
+
+    function renderTabs() {
+      const container = document.getElementById('map-tabs');
+      container.innerHTML = '';
+      state.maps.forEach(m => {
+        const btn = document.createElement('div');
+        btn.className = `map-tab ${m.id === state.currentMapId ? 'active' : ''}`;
+        btn.textContent = m.name;
+        btn.onclick = () => switchMap(m.id);
+        container.appendChild(btn);
+      });
+    }
+
+    function renderMap() {
+      const mapContainer = document.getElementById('map-container');
+      const map = getActiveMap();
+      mapContainer.style.background = BACKGROUNDS[map.bgIndex];
+      mapContainer.innerHTML = ''; // Clear sprites
+
+      map.entities.forEach(ent => {
+        const el = document.createElement('div');
+        el.className = `sprite ${ent.id === selectedEntityId ? 'selected' : ''}`;
+        el.id = `ent-${ent.id}`;
+        el.style.left = ent.x + 'px';
+        el.style.top = ent.y + 'px';
+        
+        let html = `<div class="sprite-emoji" style="transform: scale(${ent.scale || 1})">${ent.emoji}</div>`;
+        html += `<div class="sprite-label">${ent.name}</div>`;
+        
+        if (ent.type === 'enemy') {
+          const pct = Math.max(0, (ent.hp / ent.maxHp) * 100);
+          html += `<div class="hp-bar-container"><div class="hp-bar-fill" style="width:${pct}%"></div></div>`;
         }
-      };
-      reader.readAsText(file);
-    }
-
-    /* ==========================================
-       UI TOGGLES
-       ========================================== */
-    let isPresenting = false;
-    function togglePresentation() {
-      isPresenting = !isPresenting;
-      const hud = document.getElementById('hud');
-      const btn = document.getElementById('presentation-toggle');
-      if (isPresenting) {
-        hud.classList.add('hidden');
-        btn.textContent = "⚙️ Edit Mode";
-        btn.style.borderColor = "#ff3333";
-      } else {
-        hud.classList.remove('hidden');
-        btn.textContent = "📺 Present Mode";
-        btn.style.borderColor = "var(--border-gold)";
-      }
-    }
-
-    // Keyboard shortcut (Escape) to exit presentation mode
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && isPresenting) {
-        togglePresentation();
-      }
-    });
-
-    /* ==========================================
-       PLAYER MANAGEMENT
-       ========================================== */
-    function getAvgPartyLevel() {
-      if (state.players.length === 0) return 1;
-      let total = state.players.reduce((sum, p) => sum + parseInt(p.level), 0);
-      return Math.max(1, Math.floor(total / state.players.length));
-    }
-
-    function addPlayer(name = "New Hero", emoji = "🔵") {
-      const pid = 'p_' + Date.now();
-      state.players.push({
-        id: pid,
-        name: name,
-        colorEmoji: emoji,
-        level: 1,
-        hp: 20,
-        maxHp: 20,
-        xp: 0,
-        inventory: [] // Array of item objects
-      });
-      saveState();
-      renderPlayers();
-    }
-
-    function renderPlayers() {
-      const panel = document.getElementById('players-panel');
-      // Keep the add button, clear the rest
-      const addBtn = panel.firstElementChild;
-      panel.innerHTML = '';
-      panel.appendChild(addBtn);
-
-      state.players.forEach((p, index) => {
-        const card = document.createElement('div');
-        card.className = 'player-card';
-        card.innerHTML = `
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-             <input type="text" class="p-name" value="${p.name}" onchange="updatePlayer('${p.id}', 'name', this.value)">
-             <span style="cursor:pointer;" onclick="spawnPlayerToken('${p.id}')" title="Spawn Token">${p.colorEmoji}</span>
-          </div>
-          <div class="p-stat-row">
-            <span>Level</span>
-            <input type="number" value="${p.level}" onchange="updatePlayer('${p.id}', 'level', this.value)">
-          </div>
-          <div class="p-stat-row">
-            <span>HP</span>
-            <div>
-              <input type="number" value="${p.hp}" onchange="updatePlayer('${p.id}', 'hp', this.value)" style="color:var(--health-red); font-weight:bold;"> 
-              / <input type="number" value="${p.maxHp}" onchange="updatePlayer('${p.id}', 'maxHp', this.value)">
-            </div>
-          </div>
-          <div class="p-stat-row">
-            <span>XP</span>
-            <input type="number" value="${p.xp}" onchange="updatePlayer('${p.id}', 'xp', this.value)">
-          </div>
-          <div class="inventory-zone" id="inv-${p.id}" ondragover="event.preventDefault()" ondrop="handleInventoryDrop(event, '${p.id}')">
-            ${p.inventory.map((item, i) => `
-              <div class="inv-item" draggable="true" ondragstart="startDragItem(event, '${p.id}', ${i})" oncontextmenu="deleteItem(event, '${p.id}', ${i})">
-                ${item.emoji} ${item.name}
-              </div>
-            `).join('')}
-          </div>
-        `;
-        panel.appendChild(card);
+        
+        el.innerHTML = html;
+        setupDrag(el, ent);
+        mapContainer.appendChild(el);
       });
     }
 
-    function updatePlayer(id, field, value) {
-      const player = state.players.find(p => p.id === id);
-      if (player) {
-        player[field] = (field === 'name') ? value : parseInt(value) || 0;
-        saveState();
+    function handleMapClick(e) {
+      if (e.target.id === 'map-container') {
+        selectedEntityId = null;
+        renderMap();
+        updateTargetPanel();
       }
     }
 
-    function spawnPlayerToken(id) {
-      const p = state.players.find(p => p.id === id);
-      if (!p) return;
-      spawnEntityOnMap({
-        type: 'player',
-        refId: p.id,
-        emoji: p.colorEmoji,
-        name: p.name,
-        x: 100 + Math.random() * 50,
-        y: 100 + Math.random() * 50
-      });
-    }
-
     /* ==========================================
-       MAP DRAG & DROP / ENTITIES
+       DRAG & DROP / ASSETS
        ========================================== */
-    function renderBestiary() {
-      const list = document.getElementById('bestiary-list');
-      BESTIARY.forEach((b, i) => {
-        const token = document.createElement('div');
-        token.className = 'asset-token';
-        token.textContent = b.emoji;
-        token.title = b.name;
-        token.draggable = true;
-        token.ondragstart = (e) => {
-          e.dataTransfer.setData('text/plain', JSON.stringify({ source: 'bestiary', index: i }));
+    function populateGrid(containerId, dataArray, type) {
+      const container = document.getElementById(containerId);
+      dataArray.forEach((item, index) => {
+        const div = document.createElement('div');
+        div.className = 'asset-item';
+        div.textContent = item.e;
+        div.title = item.n;
+        div.draggable = true;
+        div.ondragstart = (e) => {
+          e.dataTransfer.setData('text/plain', JSON.stringify({ source: type, index: index }));
         };
-        list.appendChild(token);
+        container.appendChild(div);
       });
     }
 
@@ -608,122 +409,66 @@
       const raw = e.dataTransfer.getData('text/plain');
       if (!raw) return;
       
-      const rect = document.getElementById('map-container').getBoundingClientRect();
-      const x = e.clientX - rect.left - 30; // Offset center
-      const y = e.clientY - rect.top - 30;
+      const mapRect = document.getElementById('map-container').getBoundingClientRect();
+      const x = e.clientX - mapRect.left - 24; 
+      const y = e.clientY - mapRect.top - 24;
+      const map = getActiveMap();
 
       try {
         const data = JSON.parse(raw);
+        let blueprint = null;
+        let entType = 'sprite';
+
         if (data.source === 'bestiary') {
-          const monster = BESTIARY[data.index];
-          const avgLvl = getAvgPartyLevel();
-          const scaledHp = Math.floor(monster.baseHp + (avgLvl * monster.baseHp * 0.2));
-          
-          spawnEntityOnMap({
-            type: 'enemy',
-            emoji: monster.emoji,
-            name: monster.name,
-            hp: scaledHp,
-            maxHp: scaledHp,
-            x: x, y: y,
-            id: 'e_' + Date.now()
-          });
-        } else if (data.source === 'inventory') {
-          // Player dropped item on map
+          blueprint = BESTIARY[data.index];
+          entType = 'enemy';
+        } else if (data.source === 'sprite') {
+          blueprint = SPRITES[data.index];
+        } else if (data.source === 'player') {
           const p = state.players.find(p => p.id === data.playerId);
-          if (p) {
-            const item = p.inventory.splice(data.itemIndex, 1)[0];
-            spawnEntityOnMap({
-              type: 'item',
-              emoji: item.emoji,
-              name: item.name,
-              itemData: item,
-              x: x, y: y,
-              id: 'i_' + Date.now()
-            });
-            renderPlayers();
-          }
-        } else if (data.source === 'lootGen') {
-          // Generated loot dropped on map
-          spawnEntityOnMap({
-            type: 'item',
-            emoji: data.item.emoji,
-            name: data.item.name,
-            itemData: data.item,
-            x: x, y: y,
-            id: 'i_' + Date.now()
-          });
+          blueprint = { e: p.color, n: p.name };
+          entType = 'player';
         }
-      } catch (err) {
-        console.error("Drop error", err);
-      }
+
+        if (blueprint) {
+          const newEnt = {
+            id: state.entityIdCounter++,
+            type: entType,
+            emoji: blueprint.e,
+            name: blueprint.n,
+            x: x, y: y,
+            scale: 1.0
+          };
+          
+          if (entType === 'enemy') {
+            const avgLvl = getAvgPartyLevel();
+            newEnt.maxHp = Math.floor(blueprint.hp + (avgLvl * 2));
+            newEnt.hp = newEnt.maxHp;
+          }
+
+          map.entities.push(newEnt);
+          selectedEntityId = newEnt.id; // Auto select new drop
+          renderMap();
+          updateTargetPanel();
+        }
+      } catch (err) { console.error("Drop Parse Error"); }
     }
 
-    function spawnEntityOnMap(ent) {
-      // Create DOM element
-      const el = document.createElement('div');
-      el.className = `sprite ${ent.type}`;
-      el.style.left = ent.x + 'px';
-      el.style.top = ent.y + 'px';
-      
-      let html = `<div class="sprite-emoji">${ent.emoji}</div>
-                  <div class="sprite-label">${ent.name}</div>`;
-                  
-      if (ent.type === 'enemy') {
-        const pct = (ent.hp / ent.maxHp) * 100;
-        html += `<div class="enemy-hp-container"><div class="enemy-hp-fill" style="width:${pct}%"></div></div>`;
-      }
-      
-      el.innerHTML = html;
-      
-      // Interaction Listeners
-      enableMapDrag(el, ent);
-      
-      if (ent.type === 'enemy') {
-        el.addEventListener('click', (e) => handleEnemyClick(e, ent, el));
-      }
-
-      // Context menu to delete
-      el.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-        el.remove();
-        state.entities = state.entities.filter(x => x.id !== ent.id);
-        saveState();
-      });
-
-      document.getElementById('map-container').appendChild(el);
-      ent.domElement = el; // Store ref transiently
-      
-      // Save state if not already existing
-      if (!state.entities.find(x => x.id === ent.id)) {
-        state.entities.push(ent);
-        saveState();
-      }
-    }
-
-    function renderMapEntities() {
-      const container = document.getElementById('map-container');
-      // Clear current sprites
-      container.querySelectorAll('.sprite').forEach(el => el.remove());
-      
-      state.entities.forEach(ent => {
-        // Player tokens might need dynamic name updates, skip for now to keep simple
-        spawnEntityOnMap(ent);
-      });
-    }
-
-    function enableMapDrag(el, ent) {
+    function setupDrag(el, ent) {
       let isDragging = false;
       let offsetX, offsetY;
-      
+
       el.addEventListener('mousedown', e => {
-        if (e.button === 2) return; // Right click
+        e.stopPropagation(); // Prevent map click
+        if (e.button === 2) return;
         isDragging = true;
         offsetX = e.offsetX;
         offsetY = e.offsetY;
-        el.style.zIndex = 100; // Bring to front
+        selectedEntityId = ent.id;
+        renderMap(); // Update visuals for selection
+        updateTargetPanel();
       });
-      
+
       document.addEventListener('mousemove', e => {
         if (!isDragging) return;
         const rect = document.getElementById('map-container').getBoundingClientRect();
@@ -732,197 +477,235 @@
         el.style.left = ent.x + 'px';
         el.style.top = ent.y + 'px';
       });
-      
-      document.addEventListener('mouseup', e => {
-        if (isDragging) {
-          isDragging = false;
-          el.style.zIndex = 10;
-          saveState(); // Save new pos
-        }
-      });
+
+      document.addEventListener('mouseup', () => { isDragging = false; });
     }
 
     /* ==========================================
-       COMBAT & SPINNER ENGINE
+       TARGET SELECTION & MODIFICATION
        ========================================== */
-    function runSpin(difficultyName, dc) {
-      const readout = document.getElementById('spin-readout');
-      const container = document.getElementById('map-container');
-      
-      // Determine highest player level + best weapon in party for calculation
-      let highestLvl = 1;
-      let maxBonus = 0;
-      state.players.forEach(p => {
-        if (p.level > highestLvl) highestLvl = p.level;
-        p.inventory.forEach(i => {
-          if (i.dmgBonus > maxBonus) maxBonus = i.dmgBonus;
-        });
-      });
+    function updateTargetPanel() {
+      const panel = document.getElementById('target-panel');
+      const map = getActiveMap();
+      const ent = map.entities.find(e => e.id === selectedEntityId);
 
-      // Visual Animation
-      let ticks = 0;
-      const interval = setInterval(() => {
-        readout.textContent = Math.random().toString(36).substring(2, 10).toUpperCase();
-        ticks++;
-        if (ticks > 15) {
-          clearInterval(interval);
-          
-          // Math Logic
-          const d20 = Math.floor(Math.random() * 20) + 1;
-          const totalRoll = d20 + highestLvl + maxBonus;
-          
-          let resultText = "";
-          let calcDamage = 0;
-          let color = "";
+      if (!ent) {
+        panel.classList.remove('active');
+        return;
+      }
 
-          if (d20 === 20 || totalRoll >= dc + 5) {
-            resultText = "Critical Success!";
-            calcDamage = (highestLvl + maxBonus + 5) * 2;
-            color = "#ffd700"; // Gold
-          } else if (totalRoll >= dc) {
-            resultText = "Success!";
-            calcDamage = highestLvl + maxBonus + 2;
-            color = "#00ffaa"; // Green
-          } else if (totalRoll >= dc - 2) {
-            resultText = "Barely Passed";
-            calcDamage = Math.max(1, Math.floor((highestLvl + maxBonus) / 2));
-            color = "#aaaaaa"; // Gray
-          } else if (d20 === 1) {
-            resultText = "Catastrophic Fail";
-            calcDamage = 0;
-            color = "#ff3333"; // Red
-          } else {
-            resultText = "Failure";
-            calcDamage = 0;
-            color = "#ff8800"; // Orange
-          }
+      panel.classList.add('active');
+      document.getElementById('target-name').textContent = `${ent.emoji} ${ent.name}`;
+      document.getElementById('target-size-readout').textContent = ent.scale.toFixed(1);
 
-          readout.innerHTML = `<span style="color:${color}">${resultText}</span>`;
-          
-          if (calcDamage > 0) {
-            pendingDamage = calcDamage;
-            isTargeting = true;
-            container.classList.add('targeting-mode');
-            setTimeout(() => {
-              readout.innerHTML += `<br><span style="font-size:14px; color:#fff;">Click enemy to deal ${calcDamage} DMG</span>`;
-            }, 500);
-          } else {
-            pendingDamage = 0;
-            isTargeting = false;
-            container.classList.remove('targeting-mode');
-          }
-        }
-      }, 50);
-    }
-
-    function handleEnemyClick(e, ent, el) {
-      if (!isTargeting || pendingDamage <= 0) return;
-      
-      // Apply Damage
-      ent.hp -= pendingDamage;
-      
-      // Float Animation
-      const dmgFloat = document.createElement('div');
-      dmgFloat.className = 'damage-text';
-      dmgFloat.textContent = `-${pendingDamage}`;
-      dmgFloat.style.left = e.clientX + 'px';
-      dmgFloat.style.top = e.clientY + 'px';
-      document.body.appendChild(dmgFloat);
-      
-      setTimeout(() => dmgFloat.remove(), 1500);
-
-      if (ent.hp <= 0) {
-        // Kill
-        el.classList.add('death-anim');
-        setTimeout(() => {
-          el.remove();
-          state.entities = state.entities.filter(x => x.id !== ent.id);
-          saveState();
-        }, 1000);
+      const hpControls = document.getElementById('target-hp-controls');
+      if (ent.type === 'enemy') {
+        hpControls.style.display = 'flex';
+        document.getElementById('target-hp-readout').textContent = `${ent.hp}/${ent.maxHp}`;
       } else {
-        // Update HP Bar
-        const pct = Math.max(0, (ent.hp / ent.maxHp) * 100);
-        el.querySelector('.enemy-hp-fill').style.width = pct + '%';
-        saveState();
+        hpControls.style.display = 'none';
       }
+    }
 
-      // Reset Targeting
-      pendingDamage = 0;
-      isTargeting = false;
-      document.getElementById('map-container').classList.remove('targeting-mode');
-      document.getElementById('spin-readout').textContent = "Damage Applied.";
+    function resizeTarget(amount) {
+      const map = getActiveMap();
+      const ent = map.entities.find(e => e.id === selectedEntityId);
+      if (ent) {
+        ent.scale = Math.max(0.4, Math.min(5.0, ent.scale + amount));
+        renderMap();
+        updateTargetPanel();
+      }
+    }
+
+    function modifyTargetHp(amount) {
+      const map = getActiveMap();
+      const ent = map.entities.find(e => e.id === selectedEntityId);
+      if (ent && ent.type === 'enemy') {
+        ent.hp = Math.max(0, Math.min(ent.maxHp, ent.hp + amount));
+        renderMap();
+        updateTargetPanel();
+      }
+    }
+
+    function killAndLootTarget() {
+      const map = getActiveMap();
+      const entIndex = map.entities.findIndex(e => e.id === selectedEntityId);
+      if (entIndex > -1) {
+        const ent = map.entities[entIndex];
+        // Award XP based on max HP
+        awardPartyXp(Math.max(1, Math.floor(ent.maxHp / 2)));
+        
+        // Remove enemy
+        map.entities.splice(entIndex, 1);
+        
+        // Drop generic loot crate where they died
+        map.entities.push({
+          id: state.entityIdCounter++, type: 'sprite', emoji: '宝', name: 'Loot',
+          x: ent.x, y: ent.y, scale: 1.0
+        });
+
+        selectedEntityId = null;
+        renderMap();
+        updateTargetPanel();
+      }
     }
 
     /* ==========================================
-       LOOT GENERATOR
+       PLAYERS & XP SYSTEM
        ========================================== */
-    function generateLoot(tier) {
-      const pool = ITEMS[tier];
-      const item = pool[Math.floor(Math.random() * pool.length)];
-      
-      // Package it as a drop event for the map
-      const e = new DragEvent('dragstart');
-      e.dataTransfer = new DataTransfer();
-      e.dataTransfer.setData('text/plain', JSON.stringify({ source: 'lootGen', item: item }));
-      
-      // Manually trigger drop in center of map
-      const mapRect = document.getElementById('map-container').getBoundingClientRect();
-      const dropEvt = new DragEvent('drop', {
-        clientX: mapRect.left + (mapRect.width / 2) + (Math.random() * 50 - 25),
-        clientY: mapRect.top + (mapRect.height / 2) + (Math.random() * 50 - 25)
+    function getAvgPartyLevel() {
+      if (state.players.length === 0) return 1;
+      return Math.floor(state.players.reduce((s, p) => s + p.level, 0) / state.players.length);
+    }
+
+    function addPlayer() {
+      const colors = ['🔴','🔵','🟢','🟣','🟡'];
+      const color = colors[(state.playerIdCounter - 1) % colors.length];
+      state.players.push({
+        id: state.playerIdCounter++, name: "Hero", color: color,
+        level: 1, hp: 20, maxHp: 20, xp: 0
       });
-      Object.defineProperty(dropEvt, 'dataTransfer', { value: e.dataTransfer });
-      
-      handleMapDrop(dropEvt);
-      document.getElementById('spin-readout').innerHTML = `<span style="color:#a855f7;">Loot Dropped: ${item.name}</span>`;
+      renderPlayers();
     }
 
-    /* ==========================================
-       INVENTORY DRAG & DROP
-       ========================================== */
-    function startDragItem(e, playerId, itemIndex) {
-      e.dataTransfer.setData('text/plain', JSON.stringify({
-        source: 'inventory',
-        playerId: playerId,
-        itemIndex: itemIndex
-      }));
+    function renderPlayers() {
+      const list = document.getElementById('players-list');
+      list.innerHTML = '';
+      state.players.forEach(p => {
+        const xpReq = p.level * 10;
+        const xpPct = Math.min(100, (p.xp / xpReq) * 100);
+        
+        const card = document.createElement('div');
+        card.className = 'player-card';
+        card.style.borderColor = getHexFromEmoji(p.color);
+        card.innerHTML = `
+          <div class="flex-between">
+            <div class="flex-row">
+              <span style="cursor:grab; font-size:20px;" draggable="true" ondragstart="startPlayerDrag(event, ${p.id})">${p.color}</span>
+              <strong contenteditable="true" onblur="updatePlayerName(${p.id}, this.textContent)">${p.name}</strong>
+              <span style="font-size:12px; color:#888;">Lvl ${p.level}</span>
+            </div>
+          </div>
+          <div class="stat-row">
+            <div class="flex-row">HP: 
+              <div class="stat-ctrl">
+                <button class="stat-btn" onclick="modPlayerHp(${p.id}, -1)">-</button>
+                <span>${p.hp}/${p.maxHp}</span>
+                <button class="stat-btn" onclick="modPlayerHp(${p.id}, 1)">+</button>
+              </div>
+            </div>
+          </div>
+          <div class="stat-row">
+            <div class="flex-row">
+              <button class="btn" style="padding:2px 6px; font-size:10px;" onclick="awardPlayerXp(${p.id}, 1)">+1 XP</button>
+              <div class="xp-bar-bg"><div class="xp-bar-fill" style="width:${xpPct}%"></div></div>
+            </div>
+            <span style="font-size:10px; color:#aaa;">${p.xp}/${xpReq}</span>
+          </div>
+        `;
+        list.appendChild(card);
+      });
     }
 
-    function handleInventoryDrop(e, playerId) {
-      e.preventDefault();
-      const raw = e.dataTransfer.getData('text/plain');
-      if (!raw) return;
-      
-      try {
-        const data = JSON.parse(raw);
-        if (data.source === 'inventory') {
-          // Moving between players
-          if (data.playerId !== playerId) {
-            const sourcePlayer = state.players.find(p => p.id === data.playerId);
-            const targetPlayer = state.players.find(p => p.id === playerId);
-            if (sourcePlayer && targetPlayer) {
-              const item = sourcePlayer.inventory.splice(data.itemIndex, 1)[0];
-              targetPlayer.inventory.push(item);
-              saveState();
-              renderPlayers();
-            }
-          }
-        } else if (data.source === 'mapItem') {
-          // Needs logic to drag *from* map to inventory (left as future polish, currently loot drops to map)
-        }
-      } catch(err) {
-        console.error(err);
-      }
+    function getHexFromEmoji(emoji) {
+      const map = {'🔴':'#e74c3c','🔵':'#3498db','🟢':'#2ecc71','🟣':'#9b59b6','🟡':'#f1c40f'};
+      return map[emoji] || '#fff';
     }
 
-    function deleteItem(e, playerId, itemIndex) {
-      e.preventDefault();
-      const p = state.players.find(x => x.id === playerId);
-      if(p) {
-        p.inventory.splice(itemIndex, 1);
-        saveState();
+    function startPlayerDrag(e, pid) {
+      e.dataTransfer.setData('text/plain', JSON.stringify({ source: 'player', playerId: pid }));
+    }
+
+    function updatePlayerName(id, newName) {
+      const p = state.players.find(x => x.id === id);
+      if (p) p.name = newName;
+    }
+
+    function modPlayerHp(id, amt) {
+      const p = state.players.find(x => x.id === id);
+      if (p) {
+        p.hp = Math.max(0, Math.min(p.maxHp, p.hp + amt));
         renderPlayers();
       }
+    }
+
+    function awardPlayerXp(id, amt) {
+      const p = state.players.find(x => x.id === id);
+      if (p) {
+        p.xp += amt;
+        const req = p.level * 10;
+        if (p.xp >= req) {
+          p.xp -= req;
+          p.level++;
+          p.maxHp += 5;
+          p.hp = p.maxHp;
+        }
+        renderPlayers();
+      }
+    }
+
+    function awardPartyXp(amt) {
+      state.players.forEach(p => awardPlayerXp(p.id, amt));
+    }
+
+    /* ==========================================
+       SPINNER (ROULETTE STYLE)
+       ========================================== */
+    function spinWheel(difficulty, dcBase) {
+      const readout = document.getElementById('spinner-readout');
+      const partyLvl = getAvgPartyLevel();
+      const targetDc = dcBase; // DC mechanic visual reference
+      
+      // Determine final outcome
+      const roll = Math.floor(Math.random() * 20) + 1;
+      const total = roll + partyLvl;
+      
+      let finalOutcome;
+      if (roll === 20) finalOutcome = SPINNER_OUTCOMES[0]; // Crit
+      else if (roll === 1) finalOutcome = SPINNER_OUTCOMES[5]; // Catastrophic
+      else if (total >= targetDc + 5) finalOutcome = SPINNER_OUTCOMES[0];
+      else if (total >= targetDc) finalOutcome = SPINNER_OUTCOMES[1];
+      else if (total >= targetDc - 2) finalOutcome = SPINNER_OUTCOMES[2];
+      else if (total >= targetDc - 5) finalOutcome = SPINNER_OUTCOMES[3];
+      else finalOutcome = SPINNER_OUTCOMES[4];
+
+      // Roulette Animation
+      let duration = 2500;
+      let interval = 50;
+      let elapsed = 0;
+      
+      readout.style.color = "white";
+      readout.style.textShadow = "none";
+
+      const spinInterval = setInterval(() => {
+        elapsed += interval;
+        interval += 5; // Slow down effect
+        
+        const randomOutcome = SPINNER_OUTCOMES[Math.floor(Math.random() * SPINNER_OUTCOMES.length)];
+        readout.textContent = randomOutcome.text;
+
+        if (elapsed >= duration) {
+          clearInterval(spinInterval);
+          readout.textContent = finalOutcome.text;
+          readout.style.color = finalOutcome.color;
+          readout.style.textShadow = `0 0 10px ${finalOutcome.color}`;
+          
+          if (finalOutcome.xp > 0) {
+            awardPartyXp(finalOutcome.xp);
+          }
+        }
+      }, interval);
+    }
+
+    /* ==========================================
+       FILE EXPORT
+       ========================================== */
+    function saveStateFile() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+      const a = document.createElement('a');
+      a.href = dataStr;
+      a.download = "QuickDnD_Campaign.json";
+      a.click();
     }
 
     // BOOTSTRAP
