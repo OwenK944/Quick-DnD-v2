@@ -3,588 +3,430 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>QuickDnD Engine v3.0 - Fantasy Master</title>
+  <title>QuickDnD Engine v4.0 - Master Edition</title>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Lora:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
   <style>
-    /* FANTASY THEME VARIABLES */
     :root {
       --bg-stone: #1a1a1a;
-      --panel-wood: #2c1e16;
+      --panel-wood: #251b14;
       --border-gold: #c5a059;
       --text-light: #eaddc5;
       --accent-red: #8b0000;
-      --accent-green: #27ae60;
       --accent-blue: #2980b9;
       --font-header: 'Cinzel', serif;
       --font-body: 'Lora', serif;
     }
 
     * { box-sizing: border-box; user-select: none; }
-    body {
-      margin: 0; overflow: hidden; height: 100vh;
-      font-family: var(--font-body);
-      background: var(--bg-stone); color: var(--text-light);
-    }
+    body { margin: 0; overflow: hidden; height: 100vh; font-family: var(--font-body); background: var(--bg-stone); color: var(--text-light); }
 
-    /* TYPOGRAPHY & BUTTONS */
-    h1, h2, h3, h4 { font-family: var(--font-header); margin: 0 0 10px 0; color: var(--border-gold); text-shadow: 2px 2px 4px #000; }
+    h1, h2, h3, h4 { font-family: var(--font-header); margin: 0 0 8px 0; color: var(--border-gold); }
     
     .btn {
-      background: linear-gradient(to bottom, #4a3623, #2c1e16); color: var(--text-light);
+      background: linear-gradient(to bottom, #3e2a1f, #1f140e); color: var(--text-light);
       border: 1px solid var(--border-gold); padding: 6px 12px; cursor: pointer;
       font-family: var(--font-header); font-weight: bold; border-radius: 4px;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.6); transition: all 0.2s ease; text-align: center;
+      transition: all 0.2s ease; text-align: center;
     }
-    .btn:hover { background: linear-gradient(to bottom, #5c432b, #3e2a1f); transform: translateY(-1px); box-shadow: 0 0 10px rgba(197, 160, 89, 0.5); }
-    .btn:active { transform: translateY(1px); }
-
-    /* LAYOUT: MAP & WORLD */
-    #view-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; overflow: hidden; }
+    .btn:hover { background: linear-gradient(to bottom, #4f3628, #2e1d15); box-shadow: 0 0 8px rgba(197, 160, 89, 0.4); }
     
+    /* LAYOUT */
+    #view-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; overflow: hidden; }
     #map-view { position: absolute; width: 100%; height: 100%; }
     #map-background { position: absolute; width: 100%; height: 100%; z-index: 0; background-size: cover; background-position: center; }
     
-    #world-view { position: absolute; width: 100%; height: 100%; background: #0f0a06 url('https://www.transparenttextures.com/patterns/aged-paper.png'); display: none; z-index: 5; }
+    /* ATLAS */
+    #world-view { 
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+      background: #c2b280 url('https://www.transparenttextures.com/patterns/topography.png'); 
+      background-blend-mode: multiply; display: none; z-index: 9000; 
+    }
     #world-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
     .world-node {
       position: absolute; width: 60px; height: 60px; background: var(--panel-wood); border: 2px solid var(--border-gold);
       border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: grab;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.8); z-index: 10; font-family: var(--font-header); font-size: 10px; text-align: center; color: var(--border-gold);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.6); z-index: 10; font-family: var(--font-header); font-size: 11px; text-align: center;
     }
-    .world-node:hover { transform: scale(1.1); background: #3e2a1f; }
     .world-node.linking { border-color: #00ffaa; box-shadow: 0 0 15px #00ffaa; }
 
     /* SPRITES */
     .sprite { position: absolute; display: flex; flex-direction: column; align-items: center; cursor: grab; z-index: 10; transform-origin: bottom center; }
-    .sprite-emoji { font-size: 80px; line-height: 1; filter: drop-shadow(2px 5px 5px rgba(0,0,0,0.8)); pointer-events: none; }
-    .sprite-img { max-width: 80px; max-height: 80px; filter: drop-shadow(2px 5px 5px rgba(0,0,0,0.8)); pointer-events: none; }
-    .sprite-label {
-      font-size: 12px; color: var(--text-light); background: rgba(20, 15, 10, 0.8);
-      padding: 2px 6px; border: 1px solid var(--border-gold); border-radius: 4px; margin-top: 2px; pointer-events: none;
-    }
-    
+    .sprite-emoji { font-size: 70px; line-height: 1; filter: drop-shadow(2px 5px 5px rgba(0,0,0,0.8)); pointer-events: none; }
+    .sprite-label { font-size: 12px; background: rgba(0,0,0,0.8); padding: 2px 6px; border: 1px solid var(--border-gold); border-radius: 4px; margin-top: 2px; pointer-events: none; }
     .hp-bar-container { width: 100%; height: 6px; background: #000; border: 1px solid #000; border-radius: 3px; margin-top: 4px; overflow: hidden; pointer-events: none; }
     .hp-bar-fill { height: 100%; background: var(--accent-red); width: 100%; transition: width 0.3s; }
 
-    /* CONTEXT MENU */
-    #context-menu {
-      position: absolute; background: var(--panel-wood); border: 2px solid var(--border-gold); border-radius: 6px;
-      box-shadow: 0 10px 20px rgba(0,0,0,0.9); z-index: 9999; display: none; flex-direction: column; min-width: 150px; overflow: hidden;
-    }
-    .ctx-header { background: rgba(0,0,0,0.5); padding: 5px 10px; font-family: var(--font-header); color: var(--border-gold); font-size: 12px; border-bottom: 1px solid #444; }
-    .ctx-item { padding: 8px 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; }
-    .ctx-item:hover { background: rgba(197, 160, 89, 0.2); }
-    .ctx-danger { color: #ff6b6b; }
-    .ctx-danger:hover { background: rgba(255, 0, 0, 0.2); }
-
     /* SIDEBAR */
-    #sidebar-wrapper { position: absolute; top: 0; right: 0; height: 100%; z-index: 1000; display: flex; transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
-    #sidebar-wrapper.collapsed { transform: translateX(100%); }
-    
-    #sidebar-toggle {
-      width: 35px; height: 70px; background: var(--panel-wood); color: var(--border-gold);
-      border: 2px solid var(--border-gold); border-right: none; border-radius: 8px 0 0 8px;
-      display: flex; align-items: center; justify-content: center; cursor: pointer;
-      margin-top: 20px; font-weight: bold; font-size: 20px; box-shadow: -5px 0 10px rgba(0,0,0,0.5);
-    }
-    
     #sidebar {
-      width: 360px; height: 100%; background: rgba(26, 26, 26, 0.95); background-image: url('https://www.transparenttextures.com/patterns/black-scales.png');
-      border-left: 2px solid var(--border-gold); padding: 15px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; box-shadow: -10px 0 30px rgba(0,0,0,0.8);
+      position: absolute; top: 0; right: 0; width: 380px; height: 100%; 
+      background: rgba(26, 26, 26, 0.98); border-left: 2px solid var(--border-gold); 
+      padding: 12px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; z-index: 10000;
     }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-thumb { background: var(--border-gold); border-radius: 3px; }
 
-    ::-webkit-scrollbar { width: 8px; }
-    ::-webkit-scrollbar-track { background: rgba(0,0,0,0.5); }
-    ::-webkit-scrollbar-thumb { background: var(--border-gold); border-radius: 4px; }
+    /* MODE TOGGLE */
+    .mode-switch { display: flex; background: #111; border: 1px solid #444; border-radius: 6px; overflow: hidden; margin-bottom: 5px; }
+    .mode-btn { flex: 1; padding: 10px; text-align: center; cursor: pointer; font-family: var(--font-header); transition: 0.3s; color: #888; background: transparent; border: none; font-size: 14px; font-weight: bold; }
+    .mode-btn.active { background: var(--border-gold); color: #000; }
 
-    /* SIDEBAR PANELS */
-    .panel { background: rgba(44, 30, 22, 0.8); border: 1px solid #5c432b; border-radius: 6px; padding: 12px; box-shadow: inset 0 0 15px rgba(0,0,0,0.5); }
+    .panel { background: rgba(0,0,0,0.4); border: 1px solid #4a3623; border-radius: 6px; padding: 10px; }
     .flex-row { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
     .flex-between { display: flex; justify-content: space-between; align-items: center; }
 
-    /* MAP TABS */
-    #map-tabs { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 5px; margin-bottom: 5px; }
-    .map-tab { padding: 4px 10px; background: #111; border: 1px solid #444; border-radius: 4px; cursor: pointer; white-space: nowrap; font-size: 14px; }
+    /* MODE VISIBILITY CLASSES */
+    body.mode-builder .dm-only { display: none !important; }
+    body.mode-dm .builder-only { display: none !important; }
+
+    /* MAP TABS & BGS */
+    #map-tabs { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 4px; }
+    .map-tab { padding: 4px 8px; background: #111; border: 1px solid #444; border-radius: 4px; cursor: pointer; font-size: 12px; white-space: nowrap; }
     .map-tab.active { background: var(--border-gold); color: #000; font-weight: bold; }
-    
-    #bg-picker { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 5px; }
-    .bg-thumb { width: 35px; height: 35px; flex-shrink: 0; cursor: pointer; border: 1px solid #555; border-radius: 4px; }
+    #bg-picker { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 4px; margin-top: 5px; }
+    .bg-thumb { width: 30px; height: 30px; flex-shrink: 0; cursor: pointer; border: 1px solid #555; border-radius: 4px; }
 
     /* PLAYERS */
-    .player-box { background: rgba(0,0,0,0.6); border: 1px solid #444; border-radius: 6px; padding: 8px; margin-bottom: 8px; position: relative; transition: all 0.3s; }
-    .player-box.active-hero { border-color: var(--border-gold); box-shadow: 0 0 15px rgba(197, 160, 89, 0.6); background: rgba(44, 30, 22, 0.9); }
-    .p-stat-row { display: flex; justify-content: space-between; font-size: 13px; margin-top: 4px; align-items: center; }
-    
+    .player-box { background: rgba(0,0,0,0.6); border: 1px solid #444; border-radius: 6px; padding: 8px; margin-bottom: 6px; transition: all 0.2s; }
+    .player-box.active-hero { border-color: var(--border-gold); box-shadow: 0 0 10px rgba(197, 160, 89, 0.4); background: rgba(44, 30, 22, 0.8); }
+    .p-stat-row { display: flex; justify-content: space-between; font-size: 12px; margin-top: 4px; align-items: center; }
     .math-ctrl { display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.5); padding: 2px 6px; border-radius: 4px; }
-    .math-btn { background: none; border: none; color: var(--border-gold); cursor: pointer; font-size: 16px; font-weight: bold; }
-    
-    .xp-bar { flex: 1; height: 6px; background: #000; margin: 0 10px; border-radius: 3px; overflow: hidden; border: 1px solid #333; }
+    .math-btn { background: none; border: none; color: var(--border-gold); cursor: pointer; font-size: 14px; font-weight: bold; }
+    .xp-bar { flex: 1; height: 6px; background: #000; margin: 0 8px; border-radius: 3px; border: 1px solid #333; overflow: hidden; }
     .xp-fill { height: 100%; background: var(--accent-blue); width: 0%; transition: width 0.3s; }
-    
-    .inventory { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; padding: 6px; background: rgba(0,0,0,0.4); border-radius: 4px; min-height: 30px; border: 1px dashed #555; }
-    .inv-item { font-size: 11px; background: #222; border: 1px solid var(--border-gold); padding: 2px 6px; border-radius: 4px; cursor: grab; }
+    .inventory { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; padding: 4px; background: rgba(0,0,0,0.4); border-radius: 4px; min-height: 28px; border: 1px dashed #555; }
+    .inv-item { font-size: 11px; background: #222; border: 1px solid var(--border-gold); padding: 2px 4px; border-radius: 4px; cursor: grab; }
 
     /* SPINNER */
     #spinner-readout {
-      height: 60px; background: #000; border: 2px solid var(--border-gold); border-radius: 6px;
-      display: flex; align-items: center; justify-content: center; font-family: var(--font-header);
-      font-size: 18px; font-weight: bold; margin-top: 10px; text-shadow: 0 0 8px currentColor; box-shadow: inset 0 0 15px rgba(0,0,0,0.8);
+      background: #000; border: 1px solid var(--border-gold); border-radius: 6px; padding: 10px;
+      text-align: center; margin-top: 8px; box-shadow: inset 0 0 10px rgba(0,0,0,0.8); min-height: 65px; display: flex; flex-direction: column; justify-content: center;
     }
+    .spin-result { font-family: var(--font-header); font-size: 18px; font-weight: bold; }
+    .spin-math { font-size: 11px; color: #aaa; margin-top: 4px; font-family: monospace; }
 
     /* ASSET GRIDS */
-    .asset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 6px; max-height: 120px; overflow-y: auto; padding-right: 5px; }
-    .asset-item { font-size: 28px; text-align: center; cursor: grab; padding: 4px; background: rgba(0,0,0,0.5); border: 1px solid #444; border-radius: 4px; transition: 0.2s; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-    .asset-item img { max-width: 100%; max-height: 100%; pointer-events: none; }
-    .asset-item:hover { border-color: var(--border-gold); background: rgba(197, 160, 89, 0.2); }
+    .asset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(35px, 1fr)); gap: 4px; max-height: 180px; overflow-y: auto; }
+    .asset-item { font-size: 24px; text-align: center; cursor: grab; padding: 4px; background: rgba(0,0,0,0.5); border: 1px solid #444; border-radius: 4px; }
+    .asset-item:hover { border-color: var(--border-gold); }
 
-    /* MODALS */
-    .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 10000; }
-    .modal.active { display: flex; }
-    .modal-content { background: var(--panel-wood); border: 2px solid var(--border-gold); border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 0 30px #000; }
-    .modal-content input { width: 100%; padding: 8px; margin: 10px 0; background: #111; color: white; border: 1px solid #555; font-family: var(--font-body); }
-
-    /* FLOATING TEXT */
-    .float-text { position: absolute; font-family: var(--font-header); font-size: 32px; font-weight: bold; pointer-events: none; z-index: 9999; animation: floatUp 1.5s forwards ease-out; text-shadow: 2px 2px 0 #000, -1px -1px 0 #000; }
-    @keyframes floatUp { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-80px) scale(1.2); } }
-
-    /* LOOT TARGETING MODE */
+    /* CURSORS / TARGETING */
+    body.damage-mode { cursor: crosshair; }
+    body.damage-mode #map-view .sprite[data-hp] { filter: drop-shadow(0 0 8px #ff0000); }
     body.loot-mode { cursor: crosshair; }
-    body.loot-mode #sidebar { border-color: #9b59b6; box-shadow: inset 0 0 20px rgba(155, 89, 182, 0.5); }
+    body.loot-mode .player-box { border-color: #9b59b6; cursor: pointer; }
 
+    .float-text { position: absolute; font-family: var(--font-header); font-size: 32px; font-weight: bold; pointer-events: none; z-index: 9999; animation: floatUp 1.2s forwards ease-out; text-shadow: 2px 2px 0 #000; }
+    @keyframes floatUp { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-60px); } }
+
+    /* WELCOME SCREEN */
+    #welcome-screen { position: absolute; top:0; left:0; width: 100%; height: 100%; background: #0a0a0c; z-index: 20000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
   </style>
 </head>
-<body>
+<body class="mode-builder">
+
+  <div id="welcome-screen">
+    <h1 style="font-size: 48px; margin-bottom: 30px;">QuickDnD Engine</h1>
+    <div class="flex-row">
+      <button class="btn" style="font-size: 20px; padding: 15px 30px;" onclick="init(false)">New Campaign</button>
+      <button class="btn" style="font-size: 20px; padding: 15px 30px;" onclick="document.getElementById('start-load').click()">Load .json</button>
+      <input type="file" id="start-load" accept=".json" style="display:none" onchange="init(true, event)">
+    </div>
+  </div>
 
   <div id="view-container">
-    
-    <div id="map-view" ondragover="event.preventDefault()" ondrop="onMapDrop(event)">
+    <div id="map-view" ondragover="event.preventDefault()" ondrop="onMapDrop(event)" onclick="handleMapClick(event)">
       <div id="map-background"></div>
     </div>
-
+    
     <div id="world-view">
       <svg id="world-svg"></svg>
       <div style="position: absolute; top: 20px; left: 20px; z-index: 20;">
-        <h2 style="color: #000; text-shadow: none;">Campaign Atlas</h2>
-        <button class="btn" onclick="toggleWorldMap()">Close Atlas</button>
-        <button class="btn" id="link-btn" onclick="toggleLinkMode()" style="margin-left: 10px;">Draw Path</button>
-        <div id="link-status" style="color: #444; font-weight: bold; margin-top: 5px; display: none;">Click two nodes to link them...</div>
+        <h2 style="color: #2c1e16; text-shadow: none;">Campaign Atlas</h2>
+        <button class="btn" onclick="toggleWorldMap()">Return to Map</button>
+        <button class="btn builder-only" id="link-btn" onclick="toggleLinkMode()" style="margin-left: 10px;">Draw Path</button>
       </div>
       <div id="world-nodes-container"></div>
     </div>
-
   </div>
 
-  <div id="context-menu">
-    <div class="ctx-header" id="ctx-title">Target</div>
-    <div class="ctx-item" onclick="ctxAction('scale', 0.2)">Grow <span>+</span></div>
-    <div class="ctx-item" onclick="ctxAction('scale', -0.2)">Shrink <span>-</span></div>
-    <div id="ctx-combat" style="display:none; border-top: 1px solid #444; border-bottom: 1px solid #444;">
-      <div class="ctx-item" style="color: #e74c3c;" onclick="ctxAction('dmg', 5)">Damage (-5)</div>
-      <div class="ctx-item" style="color: #27ae60;" onclick="ctxAction('heal', 5)">Heal (+5)</div>
-      <div class="ctx-item ctx-danger" onclick="ctxAction('kill', 0)">Execute</div>
+  <div id="sidebar">
+    <div class="flex-between" style="margin-bottom: 5px;">
+      <button class="btn" onclick="manualSave()" style="padding: 4px 8px; font-size:12px;">💾 Save .json</button>
+      <button class="btn" onclick="toggleWorldMap()" style="padding: 4px 8px; font-size:12px;">🗺️ Atlas</button>
     </div>
-    <div class="ctx-item" onclick="ctxAction('delete', 0)">Remove</div>
-  </div>
 
-  <div id="sidebar-wrapper">
-    <div id="sidebar-toggle" onclick="toggleSidebar()">></div>
-    <div id="sidebar">
-      
+    <div class="mode-switch">
+      <button class="mode-btn active" id="btn-mode-build" onclick="setMode('builder')">Builder Mode</button>
+      <button class="mode-btn" id="btn-mode-dm" onclick="setMode('dm')">DM Mode</button>
+    </div>
+
+    <div class="panel builder-only">
+      <div class="flex-between"><h3>Locations</h3> <button class="btn" onclick="addMap()" style="padding: 2px 6px; font-size:11px;">+ Map</button></div>
+      <div id="map-tabs"></div>
+      <div style="font-size:10px; color:#aaa; margin-top:4px;">Double-click tab to rename</div>
+      <div id="bg-picker"></div>
+    </div>
+
+    <div class="panel builder-only">
+      <h3>Props & Environment</h3>
+      <div class="asset-grid" id="grid-props"></div>
+    </div>
+
+    <div class="panel builder-only">
+      <h3>Monsters</h3>
+      <div class="asset-grid" id="grid-enemies"></div>
+    </div>
+
+    <div class="panel dm-only">
       <div class="flex-between">
-        <button class="btn" onclick="toggleSidebar()">📺 TV Mode</button>
-        <button class="btn" onclick="manualSave()">💾 JSON</button>
-        <input type="file" id="load-file" accept=".json" style="display:none" onchange="loadGame(event)">
-        <button class="btn" onclick="document.getElementById('load-file').click()">📂 Load</button>
+        <h3>The Party</h3>
+        <button class="btn" onclick="addPlayer()" style="padding: 2px 6px; font-size:11px;">+ Hero</button>
       </div>
-
-      <div class="panel">
-        <div class="flex-between" style="margin-bottom:8px;">
-          <h3>Locations</h3>
-          <div>
-            <button class="btn" onclick="addMap()" style="padding: 2px 6px; font-size:12px;">+ Map</button>
-            <button class="btn" onclick="toggleWorldMap()" style="padding: 2px 6px; font-size:12px;">🗺️ Atlas</button>
-          </div>
-        </div>
-        <div id="map-tabs"></div>
-        <div class="flex-between" style="font-size:10px; color:#aaa; margin-bottom: 5px;">Double-click tab to rename</div>
-        
-        <div class="flex-between" style="margin-top: 10px;">
-          <h3 style="margin:0; border:none;">Scenery</h3>
-          <button class="btn" onclick="document.getElementById('bg-upload').click()" style="padding: 2px 6px; font-size:12px;">+ Custom</button>
-          <input type="file" id="bg-upload" accept="image/*" style="display:none" onchange="uploadBackground(event)">
-        </div>
-        <div id="bg-picker"></div>
-      </div>
-
-      <div class="panel">
-        <h3>Action Spinner (Active Hero)</h3>
-        <div class="flex-row" style="justify-content: center; gap: 4px;">
-          <button class="btn" onclick="spinWheel(5)">Triv</button>
-          <button class="btn" onclick="spinWheel(10)">Easy</button>
-          <button class="btn" onclick="spinWheel(15)">Med</button>
-          <button class="btn" onclick="spinWheel(20)">Hard</button>
-          <button class="btn" onclick="spinWheel(25)">Epic</button>
-        </div>
-        <div id="spinner-readout">Fate Awaits</div>
-      </div>
-
-      <div class="panel">
-        <div class="flex-between">
-          <h3>The Party</h3>
-          <button class="btn" onclick="addPlayer()" style="padding: 2px 6px; font-size:12px;">+ Hero</button>
-        </div>
-        <div style="font-size:10px; color:#aaa; margin-bottom: 8px;">Double-click box to set Active Hero</div>
-        <div id="players-list"></div>
-      </div>
-
-      <div class="panel">
-        <div class="flex-between">
-          <h3 style="margin:0; border:none;">Bestiary & Props</h3>
-          <button class="btn" onclick="document.getElementById('sprite-upload').click()" style="padding: 2px 6px; font-size:12px;">+ Custom</button>
-          <input type="file" id="sprite-upload" accept="image/*" style="display:none" onchange="uploadCustomSprite(event)">
-        </div>
-        <div class="asset-grid" id="grid-enemies" style="margin-top: 10px; margin-bottom: 10px;"></div>
-        <div class="asset-grid" id="grid-props"></div>
-      </div>
-
-      <div class="panel">
-        <h3>Grant Loot (Click Tier, then Click Player)</h3>
-        <div class="flex-row">
-          <button class="btn" style="flex:1" onclick="startLootMode('average')">Standard</button>
-          <button class="btn" style="flex:1; border-color:#3498db; color:#3498db" onclick="startLootMode('good')">Rare</button>
-          <button class="btn" style="flex:1; border-color:#9b59b6; color:#9b59b6;" onclick="startLootMode('mythic')">Mythic</button>
-        </div>
-      </div>
-
+      <div style="font-size:10px; color:#aaa; margin-bottom: 6px;">Double-click to set Active Hero. Right-click to edit.</div>
+      <div id="players-list"></div>
     </div>
-  </div>
 
-  <div id="rename-modal" class="modal">
-    <div class="modal-content">
-      <h3>Rename Location</h3>
-      <input type="text" id="rename-input">
-      <button class="btn" onclick="confirmRename()">Save</button>
-      <button class="btn" onclick="document.getElementById('rename-modal').classList.remove('active')">Cancel</button>
+    <div class="panel dm-only">
+      <h3>Action Spinner (Active Hero)</h3>
+      <div class="flex-row" style="justify-content: center; gap: 4px;">
+        <button class="btn" onclick="spinWheel(5)">Triv (5)</button>
+        <button class="btn" onclick="spinWheel(10)">Easy (10)</button>
+        <button class="btn" onclick="spinWheel(15)">Med (15)</button>
+        <button class="btn" onclick="spinWheel(20)">Hard (20)</button>
+        <button class="btn" style="border-color:#e74c3c; color:#e74c3c" onclick="spinWheel(25)">Legend (25)</button>
+      </div>
+      <div id="spinner-readout">
+        <div class="spin-result" style="color:#aaa;">Awaiting Action</div>
+      </div>
     </div>
+
+    <div class="panel dm-only">
+      <h3>Spawn Loot (Click Tier -> Click Player)</h3>
+      <div class="flex-row">
+        <button class="btn" style="flex:1" onclick="startLootMode('average')">Standard</button>
+        <button class="btn" style="flex:1; border-color:#3498db; color:#3498db" onclick="startLootMode('good')">Rare</button>
+        <button class="btn" style="flex:1; border-color:#9b59b6; color:#9b59b6;" onclick="startLootMode('mythic')">Mythic</button>
+      </div>
+    </div>
+
   </div>
 
   <script>
-    /* ==========================================
-       DATA DICTIONARIES
-       ========================================== */
+    /* ================= DATA & PRESETS ================= */
     const presetsBG = [
-      { style: 'repeating-linear-gradient(45deg, #2e302b 0, #2e302b 20px, #262823 20px, #262823 40px)' }, // Grid
-      { style: 'repeating-linear-gradient(45deg, #2e7d32 0px, #2e7d32 15px, #388e3c 15px, #388e3c 30px)' }, // Grass
-      { style: 'repeating-linear-gradient(45deg, #555 0px, #555 15px, #444 15px, #444 30px)' }, // Stone
-      { style: 'repeating-linear-gradient(45deg, #c2b280 0px, #c2b280 20px, #b2a170 20px, #b2a170 40px)' }, // Sand
-      { style: 'repeating-linear-gradient(45deg, #8B5A2B 0px, #8B5A2B 15px, #6e3f1a 15px, #6e3f1a 30px)' }, // Wood
-      { style: 'linear-gradient(to bottom, #141e30, #243b55)' }, // Night
-      { style: 'repeating-linear-gradient(45deg, #e0f7fa 0px, #e0f7fa 15px, #cdeffc 15px, #cdeffc 30px)' }  // Ice
+      { s: 'repeating-linear-gradient(45deg, #2e302b 0, #2e302b 20px, #262823 20px, #262823 40px)' }, // Dark Grid
+      { s: 'repeating-linear-gradient(45deg, #2e7d32 0px, #2e7d32 15px, #388e3c 15px, #388e3c 30px)' }, // Grass
+      { s: 'repeating-linear-gradient(45deg, #555 0px, #555 15px, #444 15px, #444 30px)' }, // Stone
+      { s: 'repeating-linear-gradient(45deg, #c2b280 0px, #c2b280 20px, #b2a170 20px, #b2a170 40px)' }, // Sand
+      { s: 'repeating-linear-gradient(45deg, #8B5A2B 0px, #8B5A2B 15px, #6e3f1a 15px, #6e3f1a 30px)' }, // Wood
+      { s: 'repeating-linear-gradient(45deg, #2980b9 0px, #2980b9 15px, #3498db 15px, #3498db 30px)' }, // Water
+      { s: 'repeating-linear-gradient(45deg, #e0f7fa 0px, #e0f7fa 15px, #cdeffc 15px, #cdeffc 30px)' }, // Ice
+      { s: 'linear-gradient(to bottom, #141e30, #243b55)' } // Night
     ];
 
     const propData = [
       ['🌳', 'Tree'], ['🌲', 'Pine'], ['🪨', 'Rock'], ['🧱', 'Wall'], ['🚪', 'Door'], ['🪵', 'Log'], 
       ['🔥', 'Fire'], ['⛺', 'Tent'], ['📦', 'Crate'], ['宝', 'Chest'], ['🩸', 'Blood'], ['☠️', 'Bones'],
-      ['🗡️', 'Sword'], ['🛡️', 'Shield'], ['🧪', 'Potion'], ['📜', 'Scroll'], ['💰', 'Gold'], ['🪤', 'Trap']
+      ['🪑', 'Chair'], ['🛏️', 'Bed'], ['🕯️', 'Candle'], ['📜', 'Scroll'], ['💰', 'Gold'], ['🪤', 'Trap']
     ];
 
     const enemyData = [
-      { e: '🐀', n: 'Giant Rat', hp: 6 }, { e: '🕷️', n: 'Spider', hp: 12 }, { e: '🐺', n: 'Dire Wolf', hp: 18 },
-      { e: '👺', n: 'Goblin', hp: 15 }, { e: '💀', n: 'Skeleton', hp: 14 }, { e: '🧟', n: 'Zombie', hp: 20 },
-      { e: '👹', n: 'Orc', hp: 30 }, { e: '🧛', n: 'Vampire', hp: 45 }, { e: '🧙', n: 'Cultist', hp: 25 },
-      { e: '🐉', n: 'Dragon', hp: 100 }, { e: '👁️', n: 'Beholder', hp: 80 }, { e: '🐙', n: 'Kraken', hp: 120 }
+      { e: '🐀', n: 'Rat', hp: 6 }, { e: '🦇', n: 'Bat', hp: 8 }, { e: '🕷️', n: 'Spider', hp: 12 }, 
+      { e: '🐺', n: 'Wolf', hp: 18 }, { e: '👺', n: 'Goblin', hp: 15 }, { e: '💀', n: 'Skeleton', hp: 14 }, 
+      { e: '🧟', n: 'Zombie', hp: 20 }, { e: '👹', n: 'Orc', hp: 30 }, { e: '🧛', n: 'Vampire', hp: 45 }, 
+      { e: '🧙', n: 'Cultist', hp: 25 }, { e: '🐉', n: 'Dragon', hp: 100 }, { e: '👁️', n: 'Beholder', hp: 80 }, 
+      { e: '🐙', n: 'Kraken', hp: 120 }, { e: '👻', n: 'Ghost', hp: 22 }, { e: '🐍', n: 'Snake', hp: 10 }
     ];
 
     const lootTables = {
-      average: [ { e: '🗡️', n: 'Iron Sword', b: 1 }, { e: '🧪', n: 'Health Vial', b: 0 }, { e: '💰', n: 'Silver Coins', b: 0 } ],
-      good: [ { e: '⚔️', n: 'Steel Broadsword', b: 3 }, { e: '🛡️', n: 'Kite Shield', b: 1 }, { e: '💍', n: 'Ring of Focus', b: 2 } ],
-      mythic: [ { e: '⚡', n: 'Stormbringer', b: 6 }, { e: '👑', n: 'Crown of Kings', b: 4 }, { e: '⏳', n: 'Time Amulet', b: 5 } ]
+      average: [
+        { e: '🗡️', n: 'Iron Sword', b: 1 }, { e: '🛡️', n: 'Wooden Shield', b: 1 }, { e: '🧪', n: 'Health Vial', b: 0 }, 
+        { e: '🏹', n: 'Shortbow', b: 1 }, { e: '🪓', n: 'Hand Axe', b: 1 }, { e: '💰', n: 'Silver Coins', b: 0 }
+      ],
+      good: [
+        { e: '⚔️', n: 'Steel Broadsword', b: 2 }, { e: '🛡️', n: 'Kite Shield', b: 2 }, { e: '💍', n: 'Ring of Focus', b: 2 },
+        { e: '🪄', n: 'Wand of Sparks', b: 2 }, { e: '🔨', n: 'Warhammer', b: 2 }, { e: '💎', n: 'Ruby', b: 0 }
+      ],
+      mythic: [
+        { e: '⚡', n: 'Stormbringer', b: 3 }, { e: '👑', n: 'Crown of Kings', b: 3 }, { e: '⏳', n: 'Time Amulet', b: 3 },
+        { e: '🗡️', n: 'Vorpal Blade', b: 3 }, { e: '🔮', n: 'Orb of True Sight', b: 3 }
+      ]
     };
 
-    /* ==========================================
-       STATE
-       ========================================== */
-    let maps = [{ id: 'm1', name: "Tavern", bg: presetsBG[0].style, sprites: [], wx: 100, wy: 100 }];
-    let worldPaths = []; // {from: id, to: id}
+    /* ================= STATE ================= */
+    let maps = [];
+    let worldPaths = [];
     let currentMapIndex = 0;
     
     let players = [];
     let activePlayerId = null;
-    let backgrounds = [...presetsBG];
-    let customSprites = []; // { type: 'prop', e: base64, n: name }
 
-    let renameIndex = -1;
     let isWorldMode = false;
     let isLinkingMode = false;
     let linkStartNode = null;
     
-    let pendingLoot = null; // { tier, item }
-    let ctxTargetSprite = null; // DOM element
+    let pendingLoot = null;
+    let pendingDamage = 0;
 
-    /* ==========================================
-       INITIALIZATION & SAVE/LOAD
-       ========================================== */
-    function init() {
-      const saved = localStorage.getItem('quickdnd_v3_master');
-      if (saved) {
-        try { restoreData(JSON.parse(saved)); } catch(e) { console.error(e); defaultSetup(); }
-      } else { defaultSetup(); }
-      
-      populateAssets();
-      renderBgPicker();
-      renderTabs();
-      renderPlayers();
-      switchMap(currentMapIndex);
-
-      // Suppress default right click globally
+    /* ================= INIT & SAVE ================= */
+    function init(isLoad, event) {
+      document.getElementById('welcome-screen').style.display = 'none';
       document.addEventListener('contextmenu', e => e.preventDefault());
-      // Close context menu on click elsewhere
-      document.addEventListener('click', e => {
-        if (!e.target.closest('#context-menu')) {
-          document.getElementById('context-menu').style.display = 'none';
-        }
-      });
+
+      if (isLoad) {
+        const file = event.target.files[0]; if (!file) return;
+        const reader = new FileReader();
+        reader.onload = evt => { 
+          try { restoreData(JSON.parse(evt.target.result)); boot(); } 
+          catch(e) { alert('Invalid file'); bootDefault(); }
+        };
+        reader.readAsText(file);
+      } else {
+        bootDefault();
+      }
     }
 
-    function defaultSetup() {
-      addPlayer('🔴', 'Fighter');
-      addPlayer('🔵', 'Wizard');
-      activePlayerId = players[0].id;
+    function bootDefault() {
+      maps = [{ id: 'm1', name: "Starting Tavern", bg: presetsBG[0].s, sprites: [], wx: window.innerWidth/2, wy: window.innerHeight/2 }];
+      addPlayer('🔴', 'Fighter'); addPlayer('🔵', 'Wizard');
+      boot();
     }
 
-    function autoSave() {
-      // Serialize DOM sprites to objects
+    function boot() {
+      populateAssets(); renderBgPicker(); renderTabs(); renderPlayers(); switchMap(currentMapIndex);
+    }
+
+    function gatherData() {
       maps.forEach((m, i) => {
         if (i === currentMapIndex) {
           const cont = document.getElementById('map-view');
           m.sprites = Array.from(cont.querySelectorAll('.sprite')).map(sp => {
             const isEnemy = sp.hasAttribute('data-hp');
-            const eEl = sp.querySelector('.sprite-emoji') || sp.querySelector('.sprite-img');
             return {
               x: parseFloat(sp.style.left)||0, y: parseFloat(sp.style.top)||0,
-              scale: parseFloat(sp.getAttribute('data-scale'))||1,
-              emoji: eEl.tagName === 'IMG' ? eEl.src : eEl.textContent,
-              isImg: eEl.tagName === 'IMG',
+              scale: parseFloat(sp.getAttribute('data-scale'))||1, emoji: sp.querySelector('.sprite-emoji').textContent,
               name: sp.querySelector('.sprite-label').textContent,
-              isEnemy: isEnemy, hp: isEnemy ? parseInt(sp.getAttribute('data-hp')) : 0,
-              maxHp: isEnemy ? parseInt(sp.getAttribute('data-maxhp')) : 0
+              isEnemy: isEnemy, hp: isEnemy ? parseInt(sp.getAttribute('data-hp')) : 0, maxHp: isEnemy ? parseInt(sp.getAttribute('data-maxhp')) : 0
             };
           });
         }
       });
-
-      const data = { maps, worldPaths, currentMapIndex, players, activePlayerId, backgrounds, customSprites };
-      localStorage.setItem('quickdnd_v3_master', JSON.stringify(data));
+      return { maps, worldPaths, currentMapIndex, players, activePlayerId };
     }
 
     function restoreData(data) {
-      maps = data.maps || maps;
-      worldPaths = data.worldPaths || [];
-      currentMapIndex = data.currentMapIndex || 0;
-      players = data.players || [];
-      activePlayerId = data.activePlayerId || (players.length > 0 ? players[0].id : null);
-      backgrounds = data.backgrounds || backgrounds;
-      customSprites = data.customSprites || [];
+      maps = data.maps || []; worldPaths = data.worldPaths || []; currentMapIndex = data.currentMapIndex || 0;
+      players = data.players || []; activePlayerId = data.activePlayerId || (players.length ? players[0].id : null);
     }
 
     function manualSave() {
-      autoSave();
-      const json = localStorage.getItem('quickdnd_v3_master');
-      const blob = new Blob([json], { type: 'application/json' });
+      const data = gatherData();
+      const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
       a.download = 'Fantasy_Campaign.json'; a.click();
     }
 
-    function loadGame(e) {
-      const file = e.target.files[0]; if (!file) return;
-      const reader = new FileReader();
-      reader.onload = evt => { restoreData(JSON.parse(evt.target.result)); init(); autoSave(); };
-      reader.readAsText(file);
+    /* ================= MODES ================= */
+    function setMode(mode) {
+      document.body.className = `mode-${mode}`;
+      document.getElementById('btn-mode-build').classList.toggle('active', mode === 'builder');
+      document.getElementById('btn-mode-dm').classList.toggle('active', mode === 'dm');
     }
 
-    /* ==========================================
-       UI TOGGLES
-       ========================================== */
-    function toggleSidebar() {
-      const w = document.getElementById('sidebar-wrapper');
-      const t = document.getElementById('sidebar-toggle');
-      w.classList.toggle('collapsed');
-      t.textContent = w.classList.contains('collapsed') ? '<' : '>';
-    }
-
-    /* ==========================================
-       MAP & WORLD GRAPH LOGIC
-       ========================================== */
+    /* ================= MAPS & ATLAS ================= */
     function renderTabs() {
       const bar = document.getElementById('map-tabs'); bar.innerHTML = '';
       maps.forEach((m, i) => {
         const t = document.createElement('div');
         t.className = `map-tab ${i === currentMapIndex && !isWorldMode ? 'active' : ''}`;
         t.textContent = m.name;
-        t.onclick = () => { if (isWorldMode) toggleWorldMap(); switchMap(i); };
-        t.ondblclick = () => { renameIndex = i; document.getElementById('rename-input').value = m.name; document.getElementById('rename-modal').classList.add('active'); };
+        t.onclick = () => { if(isWorldMode) toggleWorldMap(); switchMap(i); };
+        t.ondblclick = () => { const n = prompt("Rename map:", m.name); if(n) { m.name = n; renderTabs(); renderWorldNodes(); } };
         bar.appendChild(t);
       });
     }
 
-    function confirmRename() {
-      maps[renameIndex].name = document.getElementById('rename-input').value;
-      document.getElementById('rename-modal').classList.remove('active');
-      renderTabs(); renderWorldNodes(); autoSave();
-    }
-
     function addMap() {
-      maps.push({ id: 'm'+Date.now(), name: `Region ${maps.length+1}`, bg: backgrounds[0].style, sprites: [], wx: 100 + (maps.length*20), wy: 100 + (maps.length*20) });
-      renderTabs(); switchMap(maps.length - 1); if(isWorldMode) renderWorldNodes(); autoSave();
+      maps.push({ id: 'm'+Date.now(), name: `Region ${maps.length+1}`, bg: presetsBG[0].s, sprites: [], wx: 100+(maps.length*30), wy: 100+(maps.length*30) });
+      renderTabs(); switchMap(maps.length - 1); if(isWorldMode) renderWorldNodes();
     }
 
-    function switchMap(index) {
-      if(isWorldMode) return; // Handled by toggle
-      
-      // Save current map state before switching
-      autoSave(); 
-      currentMapIndex = index;
-      
-      document.getElementById('map-background').style.background = maps[index].bg.startsWith('url') ? maps[index].bg : maps[index].bg;
-      const cont = document.getElementById('map-view');
-      cont.querySelectorAll('.sprite').forEach(s => s.remove());
-      
-      // Rebuild sprites for active map
-      maps[index].sprites.forEach(sd => {
-        const sp = buildSpriteElement(sd);
-        cont.appendChild(sp);
-      });
-      
+    function switchMap(idx) {
+      if(isWorldMode) return;
+      gatherData(); currentMapIndex = idx;
+      document.getElementById('map-background').style.background = maps[idx].bg;
+      const cont = document.getElementById('map-view'); cont.querySelectorAll('.sprite').forEach(s => s.remove());
+      maps[idx].sprites.forEach(sd => cont.appendChild(buildSprite(sd)));
       renderTabs();
     }
 
     function toggleWorldMap() {
       isWorldMode = !isWorldMode;
       const wv = document.getElementById('world-view');
-      if (isWorldMode) {
-        autoSave(); // Save current map state
-        wv.style.display = 'block';
-        renderTabs(); // Clear active tab highlight
-        renderWorldNodes();
-      } else {
-        wv.style.display = 'none';
-        isLinkingMode = false;
-        document.getElementById('link-status').style.display = 'none';
-        switchMap(currentMapIndex);
-      }
+      if (isWorldMode) { gatherData(); wv.style.display = 'block'; renderTabs(); renderWorldNodes(); } 
+      else { wv.style.display = 'none'; isLinkingMode = false; switchMap(currentMapIndex); }
     }
 
     function renderWorldNodes() {
-      const cont = document.getElementById('world-nodes-container');
-      cont.innerHTML = '';
+      const cont = document.getElementById('world-nodes-container'); cont.innerHTML = '';
       maps.forEach((m, i) => {
-        const n = document.createElement('div');
-        n.className = 'world-node';
-        n.textContent = m.name;
+        const n = document.createElement('div'); n.className = 'world-node'; n.textContent = m.name;
         n.style.left = m.wx + 'px'; n.style.top = m.wy + 'px';
-        
-        n.onclick = (e) => {
+        n.onclick = () => {
           if (isLinkingMode) {
             if (!linkStartNode) { linkStartNode = m.id; n.classList.add('linking'); }
-            else {
-              if (linkStartNode !== m.id) { worldPaths.push({from: linkStartNode, to: m.id}); }
-              linkStartNode = null; document.querySelectorAll('.world-node').forEach(el => el.classList.remove('linking'));
-              drawWorldLines(); autoSave();
-            }
+            else { if (linkStartNode !== m.id) worldPaths.push({from: linkStartNode, to: m.id}); linkStartNode = null; document.querySelectorAll('.world-node').forEach(el=>el.classList.remove('linking')); drawWorldLines(); }
           }
         };
         n.ondblclick = () => { toggleWorldMap(); switchMap(i); };
-        
-        // Node Dragging
         let isDrag = false, ox, oy;
         n.onmousedown = (e) => { if (isLinkingMode) return; isDrag = true; ox = e.offsetX; oy = e.offsetY; n.style.zIndex = 20; };
         document.addEventListener('mousemove', e => { if (!isDrag) return; m.wx = e.clientX - ox; m.wy = e.clientY - oy; n.style.left = m.wx+'px'; n.style.top = m.wy+'px'; drawWorldLines(); });
-        document.addEventListener('mouseup', () => { if (isDrag) { isDrag = false; n.style.zIndex = 10; autoSave(); } });
-        
+        document.addEventListener('mouseup', () => { if (isDrag) { isDrag = false; n.style.zIndex = 10; } });
         cont.appendChild(n);
       });
       drawWorldLines();
     }
 
     function drawWorldLines() {
-      const svg = document.getElementById('world-svg');
-      svg.innerHTML = '';
+      const svg = document.getElementById('world-svg'); svg.innerHTML = '';
       worldPaths.forEach(p => {
         const m1 = maps.find(m => m.id === p.from); const m2 = maps.find(m => m.id === p.to);
         if (m1 && m2) {
-          const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-          line.setAttribute('x1', m1.wx + 30); line.setAttribute('y1', m1.wy + 30);
-          line.setAttribute('x2', m2.wx + 30); line.setAttribute('y2', m2.wy + 30);
-          line.setAttribute('stroke', '#c5a059'); line.setAttribute('stroke-width', '3'); line.setAttribute('stroke-dasharray', '5,5');
-          svg.appendChild(line);
+          const l = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          l.setAttribute('x1', m1.wx+30); l.setAttribute('y1', m1.wy+30); l.setAttribute('x2', m2.wx+30); l.setAttribute('y2', m2.wy+30);
+          l.setAttribute('stroke', '#c5a059'); l.setAttribute('stroke-width', '3'); l.setAttribute('stroke-dasharray', '5,5'); svg.appendChild(l);
         }
       });
     }
 
     function toggleLinkMode() {
-      isLinkingMode = !isLinkingMode;
-      linkStartNode = null;
+      isLinkingMode = !isLinkingMode; linkStartNode = null;
       document.querySelectorAll('.world-node').forEach(el => el.classList.remove('linking'));
-      document.getElementById('link-status').style.display = isLinkingMode ? 'block' : 'none';
       document.getElementById('link-btn').style.borderColor = isLinkingMode ? '#00ffaa' : '';
     }
 
-    /* ==========================================
-       BACKGROUNDS
-       ========================================== */
+    /* ================= BGS & ASSETS ================= */
     function renderBgPicker() {
       const cont = document.getElementById('bg-picker'); cont.innerHTML = '';
-      backgrounds.forEach(bg => {
-        const thumb = document.createElement('div');
-        thumb.className = 'bg-thumb'; thumb.style.background = bg.style.startsWith('url') ? bg.style : bg.style;
-        thumb.onclick = () => { maps[currentMapIndex].bg = bg.style; document.getElementById('map-background').style.background = bg.style; autoSave(); };
-        cont.appendChild(thumb);
+      presetsBG.forEach(bg => {
+        const t = document.createElement('div'); t.className = 'bg-thumb'; t.style.background = bg.s;
+        t.onclick = () => { maps[currentMapIndex].bg = bg.s; document.getElementById('map-background').style.background = bg.s; };
+        cont.appendChild(t);
       });
     }
 
-    function uploadBackground(e) {
-      const f = e.target.files[0]; if(!f) return;
-      const r = new FileReader();
-      r.onload = ev => {
-        const style = `url('${ev.target.result}')`;
-        backgrounds.push({style}); renderBgPicker();
-        maps[currentMapIndex].bg = style; document.getElementById('map-background').style.background = style; autoSave();
-      };
-      r.readAsDataURL(f);
-    }
-
-    /* ==========================================
-       ASSETS & SPRITES
-       ========================================== */
     function populateAssets() {
       const pGrid = document.getElementById('grid-props'); pGrid.innerHTML = '';
-      propData.forEach(([e, n]) => pGrid.appendChild(createAssetThumb('prop', e, n, false)));
-      customSprites.filter(s => s.type === 'prop').forEach(s => pGrid.appendChild(createAssetThumb('prop', s.e, s.n, true)));
-
+      propData.forEach(([e, n]) => pGrid.appendChild(createAssetThumb('prop', e, n)));
       const eGrid = document.getElementById('grid-enemies'); eGrid.innerHTML = '';
-      enemyData.forEach(d => eGrid.appendChild(createAssetThumb('enemy', d.e, d.n, false, d.hp)));
-      customSprites.filter(s => s.type === 'enemy').forEach(s => eGrid.appendChild(createAssetThumb('enemy', s.e, s.n, true, s.hp)));
+      enemyData.forEach(d => eGrid.appendChild(createAssetThumb('enemy', d.e, d.n, d.hp)));
     }
 
-    function createAssetThumb(type, emoji, name, isImg, hp=0) {
-      const el = document.createElement('div'); el.className = 'asset-item'; el.title = name; el.draggable = true;
-      if (isImg) { el.innerHTML = `<img src="${emoji}">`; } else { el.textContent = emoji; }
-      el.ondragstart = (e) => e.dataTransfer.setData('application/json', JSON.stringify({ type, emoji, name, isImg, hp }));
+    function createAssetThumb(type, emoji, name, hp=0) {
+      const el = document.createElement('div'); el.className = 'asset-item'; el.title = name; el.textContent = emoji; el.draggable = true;
+      el.ondragstart = (e) => e.dataTransfer.setData('application/json', JSON.stringify({ type, emoji, name, hp }));
       return el;
-    }
-
-    function uploadCustomSprite(e) {
-      const f = e.target.files[0]; if(!f) return;
-      const name = prompt("Name this asset:") || "Custom";
-      const isEnemy = confirm("Is this an enemy? (OK for Enemy, Cancel for Prop)");
-      let hp = 0; if(isEnemy) hp = parseInt(prompt("Base HP? (Scaling will apply)", "20")) || 20;
-      
-      const r = new FileReader();
-      r.onload = ev => {
-        customSprites.push({ type: isEnemy ? 'enemy' : 'prop', e: ev.target.result, n: name, hp });
-        populateAssets(); autoSave();
-      };
-      r.readAsDataURL(f);
     }
 
     function onMapDrop(e) {
@@ -592,180 +434,128 @@
       const raw = e.dataTransfer.getData('application/json'); if (!raw) return;
       const data = JSON.parse(raw);
       
-      // Handle dropping from inventory
       if (data.source === 'inventory') {
-        const p = players[data.pIndex];
-        const item = p.inventory.splice(data.iIndex, 1)[0];
-        renderPlayers();
-        data.emoji = item.e; data.name = item.n; data.type = 'prop'; data.isImg = false;
+        const p = players[data.pIndex]; const item = p.inventory.splice(data.iIndex, 1)[0];
+        renderPlayers(); data.emoji = item.e; data.name = item.n; data.type = 'prop';
       }
 
-      // Base Sprite Object Structure
-      const sd = {
-        x: e.clientX - 40, y: e.clientY - 40, scale: 1.0, emoji: data.emoji, isImg: data.isImg, name: data.name,
-        isEnemy: data.type === 'enemy', hp: 0, maxHp: 0
-      };
-
-      if (sd.isEnemy) {
-        const actP = getActivePlayer();
-        const plvl = actP ? actP.level : 1;
-        sd.maxHp = Math.floor(data.hp + (plvl * 3));
-        sd.hp = sd.maxHp;
-      }
-
-      const sp = buildSpriteElement(sd);
+      const sd = { x: e.clientX - 35, y: e.clientY - 35, scale: 1.0, emoji: data.emoji, name: data.name, isEnemy: data.type === 'enemy', hp: 0, maxHp: 0 };
+      if (sd.isEnemy) { sd.maxHp = data.hp; sd.hp = sd.maxHp; }
+      
+      const sp = buildSprite(sd);
       document.getElementById('map-view').appendChild(sp);
-      autoSave();
     }
 
-    function buildSpriteElement(sd) {
+    function buildSprite(sd) {
       const sp = document.createElement('div'); sp.className = 'sprite';
       sp.style.left = sd.x + 'px'; sp.style.top = sd.y + 'px'; sp.setAttribute('data-scale', sd.scale);
 
-      let content = sd.isImg ? `<img src="${sd.emoji}" class="sprite-img">` : `<div class="sprite-emoji">${sd.emoji}</div>`;
-      let html = `${content}<div class="sprite-label">${sd.name}</div>`;
-
+      let html = `<div class="sprite-emoji" style="transform: scale(${sd.scale})">${sd.emoji}</div><div class="sprite-label">${sd.name}</div>`;
       if (sd.isEnemy) {
         sp.setAttribute('data-hp', sd.hp); sp.setAttribute('data-maxhp', sd.maxHp);
         const pct = Math.max(0, (sd.hp / sd.maxHp) * 100);
         html += `<div class="hp-bar-container"><div class="hp-bar-fill" style="width:${pct}%"></div></div>`;
       }
-
       sp.innerHTML = html;
-      sp.querySelector('.sprite-img, .sprite-emoji').style.transform = `scale(${sd.scale})`;
 
-      // Custom Mouse Drag
       let isDrag = false, ox, oy;
       sp.onmousedown = (e) => {
-        if (e.button === 2) {
-          e.stopPropagation(); ctxTargetSprite = sp;
-          const menu = document.getElementById('context-menu');
-          document.getElementById('ctx-title').textContent = sd.name;
-          document.getElementById('ctx-combat').style.display = sd.isEnemy ? 'block' : 'none';
-          menu.style.left = e.clientX + 'px'; menu.style.top = e.clientY + 'px'; menu.style.display = 'flex';
+        if (e.button === 2) { e.preventDefault(); sp.remove(); return; } // Right click delete
+        
+        // Left click apply damage
+        if (pendingDamage > 0 && sd.isEnemy) {
+          applyDamage(sp, pendingDamage);
+          pendingDamage = 0; document.body.classList.remove('damage-mode');
           return;
         }
+
         isDrag = true; ox = e.offsetX; oy = e.offsetY; sp.style.zIndex = 100;
       };
       document.addEventListener('mousemove', e => { if (!isDrag) return; sp.style.left = (e.clientX - ox) + 'px'; sp.style.top = (e.clientY - oy) + 'px'; });
-      document.addEventListener('mouseup', () => { if (isDrag) { isDrag = false; sp.style.zIndex = 10; autoSave(); } });
+      document.addEventListener('mouseup', () => { if (isDrag) { isDrag = false; sp.style.zIndex = 10; } });
 
       return sp;
     }
 
-    /* ==========================================
-       CONTEXT MENU ACTIONS
-       ========================================== */
-    function ctxAction(action, val) {
-      if (!ctxTargetSprite) return;
-      const sp = ctxTargetSprite;
-      document.getElementById('context-menu').style.display = 'none';
+    function handleMapClick(e) {
+      if (e.target.id === 'map-view' || e.target.id === 'map-background') {
+        if(pendingDamage > 0) { pendingDamage = 0; document.body.classList.remove('damage-mode'); }
+      }
+    }
 
-      if (action === 'delete') {
-        sp.remove(); autoSave();
-      } 
-      else if (action === 'scale') {
-        let s = parseFloat(sp.getAttribute('data-scale')) + val;
-        s = Math.max(0.4, Math.min(5.0, s));
-        sp.setAttribute('data-scale', s);
-        sp.querySelector('.sprite-img, .sprite-emoji').style.transform = `scale(${s})`;
-        autoSave();
-      }
-      else if (action === 'dmg' || action === 'heal') {
-        let hp = parseInt(sp.getAttribute('data-hp'));
-        let maxHp = parseInt(sp.getAttribute('data-maxhp'));
-        let amt = action === 'dmg' ? -val : val;
-        hp = Math.max(0, Math.min(maxHp, hp + amt));
-        sp.setAttribute('data-hp', hp);
-        sp.querySelector('.hp-bar-fill').style.width = `${(hp/maxHp)*100}%`;
-        
-        spawnFloatText(sp, action === 'dmg' ? `-${val}` : `+${val}`, action === 'dmg' ? '#ff3333' : '#27ae60');
-        
-        if (hp <= 0) ctxAction('kill', 0); else autoSave();
-      }
-      else if (action === 'kill') {
-        let maxHp = parseInt(sp.getAttribute('data-maxhp'));
-        let xpGained = Math.floor(maxHp / 2);
+    /* ================= COMBAT & PLAYERS ================= */
+    function applyDamage(sp, dmg) {
+      let hp = parseInt(sp.getAttribute('data-hp')) - dmg;
+      let maxHp = parseInt(sp.getAttribute('data-maxhp'));
+      hp = Math.max(0, hp);
+      sp.setAttribute('data-hp', hp);
+      sp.querySelector('.hp-bar-fill').style.width = `${(hp/maxHp)*100}%`;
+      
+      spawnFloatText(sp, `-${dmg}`, '#ff3333');
+      
+      if (hp <= 0) {
+        const xpGained = Math.floor(maxHp / 2);
         sp.remove();
-        
-        // Award XP to Active Player
         const p = getActivePlayer();
-        if (p) {
-          awardXp(p, xpGained);
-          spawnFloatText({style:{left: (window.innerWidth/2)+'px', top: (window.innerHeight/2)+'px'}}, `+${xpGained} XP (${p.name})`, '#3498db');
-        }
-        autoSave();
+        if (p) { awardXp(p, xpGained); spawnFloatText({style:{left: (window.innerWidth/2)+'px', top: (window.innerHeight/2)+'px'}}, `+${xpGained} XP`, '#3498db'); }
       }
-      ctxTargetSprite = null;
     }
 
     function spawnFloatText(elRef, text, color) {
       const f = document.createElement('div'); f.className = 'float-text'; f.textContent = text; f.style.color = color;
-      f.style.left = parseFloat(elRef.style.left) + 20 + 'px'; f.style.top = parseFloat(elRef.style.top) - 20 + 'px';
-      document.body.appendChild(f); setTimeout(() => f.remove(), 1500);
+      f.style.left = parseFloat(elRef.style.left||0) + 20 + 'px'; f.style.top = parseFloat(elRef.style.top||0) - 20 + 'px';
+      document.body.appendChild(f); setTimeout(() => f.remove(), 1200);
     }
 
-    /* ==========================================
-       PLAYERS & PROGRESSION
-       ========================================== */
     function addPlayer(emoji='🟢', name='New Hero') {
-      const colors = ['🔴', '🔵', '🟢', '🟣', '🟡'];
-      const c = emoji || colors[players.length % colors.length];
-      const p = { id: Date.now(), name, color: c, hp: 20, maxHp: 20, level: 1, xp: 0, inventory: [] };
-      players.push(p);
-      if(!activePlayerId) activePlayerId = p.id;
-      renderPlayers(); autoSave();
+      const p = { id: Date.now(), name, color: emoji, hp: 20, maxHp: 20, level: 1, xp: 0, inventory: [] };
+      players.push(p); if(!activePlayerId) activePlayerId = p.id;
+      renderPlayers();
     }
 
     function getActivePlayer() { return players.find(p => p.id === activePlayerId); }
-
-    function setPlayerActive(id) {
-      activePlayerId = id;
-      document.getElementById('spinner-readout').textContent = `${getActivePlayer().name}'s Turn`;
-      renderPlayers(); autoSave();
-    }
+    function setPlayerActive(id) { activePlayerId = id; renderPlayers(); }
 
     function awardXp(p, amt) {
-      p.xp += amt; const req = p.level * 10;
+      p.xp += amt; const req = p.level * 20; // Harder leveling
       if (p.xp >= req) { p.xp -= req; p.level++; p.maxHp += 5; p.hp = p.maxHp; }
       renderPlayers();
     }
 
-    function modPlayerHp(pIndex, amt) {
-      players[pIndex].hp = Math.max(0, Math.min(players[pIndex].maxHp, players[pIndex].hp + amt));
-      renderPlayers(); autoSave();
+    function modPlayerHp(idx, amt) {
+      players[idx].hp = Math.max(0, Math.min(players[idx].maxHp, players[idx].hp + amt)); renderPlayers();
+    }
+
+    function editPlayer(idx) {
+      const p = players[idx];
+      const nName = prompt("Hero Name:", p.name);
+      const nCol = prompt("Hero Emoji:", p.color);
+      if(nName) p.name = nName; if(nCol) p.color = nCol;
+      renderPlayers();
     }
 
     function renderPlayers() {
       const list = document.getElementById('players-list'); list.innerHTML = '';
       players.forEach((p, index) => {
-        const req = p.level * 10; const pct = Math.min(100, (p.xp / req) * 100);
+        const req = p.level * 20; const pct = Math.min(100, (p.xp / req) * 100);
         const isActive = p.id === activePlayerId;
         
         const b = document.createElement('div');
         b.className = `player-box ${isActive ? 'active-hero' : ''}`;
         b.ondblclick = () => setPlayerActive(p.id);
+        b.oncontextmenu = (e) => { e.preventDefault(); editPlayer(index); };
         
-        // Handle Loot Mode Click
         b.onclick = () => {
-          if (pendingLoot) {
-            p.inventory.push(pendingLoot.item);
-            document.body.classList.remove('loot-mode'); pendingLoot = null;
-            renderPlayers(); autoSave();
-          }
+          if (pendingLoot) { p.inventory.push(pendingLoot.item); document.body.classList.remove('loot-mode'); pendingLoot = null; renderPlayers(); }
         };
 
         b.innerHTML = `
           <div class="flex-between">
-            <span style="cursor:grab; font-family:var(--font-header); font-size:16px;" draggable="true" ondragstart="event.dataTransfer.setData('application/json', JSON.stringify({type:'prop', emoji:'${p.color}', name:'${p.name}', isImg:false}))">${p.color} <strong>${p.name}</strong></span>
-            <span style="font-size:12px; color:#aaa; font-family:var(--font-header);">Lvl ${p.level}</span>
+            <span style="cursor:grab; font-family:var(--font-header); font-size:16px;" draggable="true" ondragstart="event.dataTransfer.setData('application/json', JSON.stringify({type:'prop', emoji:'${p.color}', name:'${p.name}'}))">${p.color} <strong>${p.name}</strong></span>
+            <span style="font-size:12px; color:#aaa;">Lvl ${p.level}</span>
           </div>
           <div class="p-stat-row">
-            <div class="math-ctrl">
-              <button class="math-btn" onclick="event.stopPropagation(); modPlayerHp(${index}, -1)">-</button>
-              <span style="color:${p.hp <= p.maxHp/4 ? 'red' : 'white'}">HP: ${p.hp}/${p.maxHp}</span>
-              <button class="math-btn" onclick="event.stopPropagation(); modPlayerHp(${index}, 1)">+</button>
-            </div>
+            <div class="math-ctrl"><button class="math-btn" onclick="event.stopPropagation(); modPlayerHp(${index}, -1)">-</button><span style="color:${p.hp <= p.maxHp/4 ? 'red' : 'white'}">HP: ${p.hp}/${p.maxHp}</span><button class="math-btn" onclick="event.stopPropagation(); modPlayerHp(${index}, 1)">+</button></div>
             <div class="xp-bar"><div class="xp-fill" style="width:${pct}%"></div></div>
           </div>
           <div class="inventory">
@@ -776,48 +566,41 @@
       });
     }
 
-    /* ==========================================
-       LOOT & SPINNER
-       ========================================== */
+    /* ================= LOOT & SPINNER ================= */
     function startLootMode(tier) {
-      const pool = lootTables[tier];
-      const item = pool[Math.floor(Math.random() * pool.length)];
-      pendingLoot = { tier, item };
-      document.body.classList.add('loot-mode');
-      document.getElementById('spinner-readout').innerHTML = `<span style="color:#9b59b6; font-size:14px;">Give ${item.n} to who?</span>`;
+      const item = lootTables[tier][Math.floor(Math.random() * lootTables[tier].length)];
+      pendingLoot = { tier, item }; document.body.classList.add('loot-mode');
+      document.getElementById('spinner-readout').innerHTML = `<div class="spin-result" style="color:#9b59b6;">Give ${item.n} to who?</div>`;
     }
 
     function spinWheel(dcBase) {
       const p = getActivePlayer(); if (!p) return;
       const readout = document.getElementById('spinner-readout');
       
-      let itemBonus = 0;
-      p.inventory.forEach(i => { if (i.b > itemBonus) itemBonus = i.b; });
+      let itemBonus = 0; p.inventory.forEach(i => { if (i.b > itemBonus) itemBonus = i.b; });
       
       const roll = Math.floor(Math.random() * 20) + 1;
-      const total = roll + p.level + itemBonus;
+      const effDc = Math.max(0, dcBase - p.level);
+      const total = roll + itemBonus;
       
-      let outcome; let dmg = 0;
-      if (roll === 20 || total >= dcBase + 5) { outcome = { t: "Critical!", c: "#f1c40f", xp: 5 }; dmg = (p.level + itemBonus + 5) * 2; }
-      else if (total >= dcBase) { outcome = { t: "Success", c: "#2ecc71", xp: 3 }; dmg = p.level + itemBonus + 3; }
-      else if (total >= dcBase - 2) { outcome = { t: "Barely", c: "#95a5a6", xp: 1 }; dmg = Math.max(1, Math.floor((p.level + itemBonus)/2)); }
-      else if (total >= dcBase - 5) { outcome = { t: "Fail", c: "#e67e22", xp: 0 }; }
-      else if (roll === 1) { outcome = { t: "Catastrophe", c: "#8b0000", xp: 0 }; }
-      else { outcome = { t: "Fail", c: "#e74c3c", xp: 0 }; }
+      let outcome, dmg = 0, color;
+      if (roll === 20) { outcome = "Critical Success!"; color = "#f1c40f"; dmg = (p.level + itemBonus + 5) * 2; }
+      else if (roll === 1) { outcome = "Catastrophic Failure"; color = "#8b0000"; }
+      else if (total >= effDc + 5) { outcome = "Great Success"; color = "#2ecc71"; dmg = p.level + itemBonus + 4; }
+      else if (total >= effDc) { outcome = "Success"; color = "#27ae60"; dmg = p.level + itemBonus + 2; }
+      else if (total >= effDc - 2) { outcome = "Barely Failed"; color = "#e67e22"; }
+      else { outcome = "Failed"; color = "#e74c3c"; }
 
-      // Animation
-      let ticks = 0; readout.style.color = "white";
-      const interval = setInterval(() => {
-        readout.textContent = ["Spinning...", "Rolling...", "Fate Deciding..."][ticks % 3]; ticks++;
-        if (ticks > 15) {
-          clearInterval(interval);
-          readout.innerHTML = `<span style="color:${outcome.c}">${outcome.t}</span><br><span style="font-size:12px; color:#fff;">${dmg > 0 ? dmg+' DMG (Right Click Enemy)' : 'Miss'}</span>`;
-          if (outcome.xp > 0) awardXp(p, outcome.xp);
-          autoSave();
-        }
-      }, 80);
+      readout.innerHTML = `<div class="spin-result" style="color:white;">Rolling...</div>`;
+      setTimeout(() => {
+        readout.innerHTML = `
+          <div class="spin-result" style="color:${color};">${outcome}</div>
+          <div class="spin-math">[Roll: ${roll} + Item: ${itemBonus} = ${total}] vs [DC ${dcBase} - Lvl ${p.level} = ${effDc}]</div>
+          ${dmg > 0 ? `<div style="font-size:11px; color:#fff; margin-top:4px;">Left Click Enemy for ${dmg} DMG</div>` : ''}
+        `;
+        if (dmg > 0) { pendingDamage = dmg; document.body.classList.add('damage-mode'); }
+      }, 800);
     }
-
   </script>
 </body>
 </html>
