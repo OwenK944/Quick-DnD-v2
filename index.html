@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>QuickDnD Engine v4.1 - Master Edition</title>
+  <title>QuickDnD Engine v4.2 - Master Edition</title>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Lora:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -32,8 +32,9 @@
     /* ATLAS */
     #world-view { 
       position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-      background: #c2b280 url('https://www.transparenttextures.com/patterns/topography.png'); 
+      background: #d2b48c url('https://www.transparenttextures.com/patterns/cartographer.png'); 
       background-blend-mode: multiply; display: none; z-index: 9000; 
+      box-shadow: inset 0 0 100px rgba(0,0,0,0.8);
     }
     #world-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
     .world-node {
@@ -101,8 +102,10 @@
     /* PLAYERS */
     .player-box { background: rgba(0,0,0,0.6); border: 1px solid #444; border-radius: 6px; padding: 8px; margin-bottom: 6px; transition: all 0.2s; position: relative;}
     .player-box.active-hero { border-color: var(--border-gold); box-shadow: 0 0 10px rgba(197, 160, 89, 0.4); background: rgba(44, 30, 22, 0.8); }
-    .p-edit-btn { position: absolute; top: 8px; right: 8px; background: transparent; border: none; color: #888; cursor: pointer; font-size: 14px; }
+    .p-edit-btn { position: absolute; top: 8px; right: 28px; background: transparent; border: none; color: #888; cursor: pointer; font-size: 14px; }
     .p-edit-btn:hover { color: var(--border-gold); }
+    .p-del-btn { position: absolute; top: 8px; right: 8px; background: transparent; border: none; color: #e74c3c; cursor: pointer; font-size: 14px; }
+    .p-del-btn:hover { color: #ff3333; }
     .p-stat-row { display: flex; justify-content: space-between; font-size: 12px; margin-top: 4px; align-items: center; }
     .math-ctrl { display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.5); padding: 2px 6px; border-radius: 4px; }
     .math-btn { background: none; border: none; color: var(--border-gold); cursor: pointer; font-size: 14px; font-weight: bold; }
@@ -208,6 +211,10 @@
           <button class="btn" onclick="addMap()" style="padding: 2px 6px; font-size:11px;">+ Map</button>
         </div>
         <div id="map-tabs"></div>
+        <div class="flex-between" style="margin-top: 10px;">
+          <h4 style="margin:0;">Backgrounds</h4>
+          <button class="btn" onclick="openModal('modal-upload-bg')" style="padding: 2px 6px; font-size:11px;">+ Custom</button>
+        </div>
         <div id="bg-picker"></div>
       </div>
     </div>
@@ -315,6 +322,17 @@
     </div>
   </div>
 
+  <div id="modal-upload-bg" class="modal">
+    <div class="modal-content">
+      <h3>Custom Map Background</h3>
+      <input type="file" id="upload-bg-file" accept="image/*">
+      <div class="flex-between">
+        <button class="btn" onclick="confirmUploadBg()">Upload</button>
+        <button class="btn" onclick="closeModal('modal-upload-bg')">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <div id="modal-upload" class="modal">
     <div class="modal-content">
       <h3>Custom Asset</h3>
@@ -361,7 +379,16 @@
       { e: '🐙', n: 'Kraken', hp: 120 }, { e: '👻', n: 'Ghost', hp: 22 }, { e: '🐍', n: 'Snake', hp: 10 }
     ];
 
-    // EXACTLY 7 items per tier.
+    const npcData = [
+      { e: '🧝', n: 'Elf Guard' }, { e: '🧙‍♂️', n: 'Old Mage' }, { e: '🥷', n: 'Rogue' },
+      { e: '👸', n: 'Noble' }, { e: '🧔', n: 'Barkeep' }, { e: '🧑‍🌾', n: 'Farmer' }
+    ];
+    const npcLines = [
+      "Greetings, traveler.", "Have you seen my lost sheep?", "The roads are dangerous at night.",
+      "I used to be an adventurer like you...", "Buy something or get out.", "Dark tidings are coming.",
+      "Praise the sun!", "Need a drink?", "Keep your hands to yourself!", "Who goes there?!"
+    ];
+
     const lootTables = {
       average: [
         { e: '🗡️', n: 'Iron Dagger', b: 1 }, { e: '🪓', n: 'Hand Axe', b: 1 }, { e: '🛡️', n: 'Wood Shield', b: 1 }, 
@@ -385,6 +412,7 @@
     let players = [];
     let activePlayerId = null;
     let customAssets = []; // {type, e, n, isImg, hp}
+    let customBGs = []; // {s}
 
     let isWorldMode = false;
     let isLinkingMode = false;
@@ -430,25 +458,26 @@
           const cont = document.getElementById('map-view');
           m.sprites = Array.from(cont.querySelectorAll('.sprite')).map(sp => {
             const isEnemy = sp.hasAttribute('data-hp');
+            const isNpc = sp.hasAttribute('data-npc');
             const el = sp.querySelector('.sprite-emoji') || sp.querySelector('.sprite-img');
             return {
               x: parseFloat(sp.style.left)||0, y: parseFloat(sp.style.top)||0,
               scale: parseFloat(sp.getAttribute('data-scale'))||1, emoji: el.tagName === 'IMG' ? el.src : el.textContent, isImg: el.tagName === 'IMG',
-              name: sp.querySelector('.sprite-label').textContent, isEnemy: isEnemy, hp: isEnemy ? parseInt(sp.getAttribute('data-hp')) : 0, maxHp: isEnemy ? parseInt(sp.getAttribute('data-maxhp')) : 0
+              name: sp.querySelector('.sprite-label').textContent, isEnemy: isEnemy, isNpc: isNpc, hp: isEnemy ? parseInt(sp.getAttribute('data-hp')) : 0, maxHp: isEnemy ? parseInt(sp.getAttribute('data-maxhp')) : 0
             };
           });
         }
       });
-      return { maps, worldPaths, currentMapIndex, players, activePlayerId, customAssets };
+      return { maps, worldPaths, currentMapIndex, players, activePlayerId, customAssets, customBGs };
     }
 
     function restoreData(data) {
       maps = data.maps || []; worldPaths = data.worldPaths || []; currentMapIndex = data.currentMapIndex || 0;
       players = data.players || []; activePlayerId = data.activePlayerId || (players.length ? players[0].id : null);
-      customAssets = data.customAssets || [];
+      customAssets = data.customAssets || []; customBGs = data.customBGs || [];
     }
 
-    function autoSave() { /* Silent internal save tracking could go here, but omitted to prevent localstorage bloat if huge images */ }
+    function autoSave() { /* Silent internal save tracking */ }
 
     /* ================= MODALS ================= */
     function openModal(id) { document.getElementById(id).classList.add('active'); }
@@ -471,7 +500,6 @@
       document.getElementById('btn-mode-build').classList.toggle('active', mode === 'builder');
       document.getElementById('btn-mode-dm').classList.toggle('active', mode === 'dm');
       
-      // Clear DM pending states if switching back to build
       if(mode === 'builder') { pendingEnemyDamage = 0; pendingPlayerDamage = 0; document.body.classList.remove('damage-mode', 'player-damage-mode', 'loot-mode'); }
     }
 
@@ -549,16 +577,31 @@
     /* ================= BGS & ASSETS ================= */
     function renderBgPicker() {
       const cont = document.getElementById('bg-picker'); cont.innerHTML = '';
-      presetsBG.forEach(bg => {
+      const allBGs = [...presetsBG, ...customBGs];
+      allBGs.forEach(bg => {
         const t = document.createElement('div'); t.className = 'bg-thumb'; t.style.background = bg.s;
         t.onclick = () => { maps[currentMapIndex].bg = bg.s; document.getElementById('map-background').style.background = bg.s; };
         cont.appendChild(t);
       });
     }
 
+    function confirmUploadBg() {
+      const f = document.getElementById('upload-bg-file').files[0];
+      if(!f) return closeModal('modal-upload-bg');
+      const r = new FileReader();
+      r.onload = ev => {
+        const style = `url('${ev.target.result}')`;
+        customBGs.push({s: style});
+        maps[currentMapIndex].bg = style; document.getElementById('map-background').style.background = style;
+        renderBgPicker(); closeModal('modal-upload-bg');
+      };
+      r.readAsDataURL(f);
+    }
+
     function populateAssets() {
       const pGrid = document.getElementById('grid-props'); pGrid.innerHTML = '';
       propData.forEach(([e, n]) => pGrid.appendChild(createAssetThumb('prop', e, n)));
+      npcData.forEach(d => pGrid.appendChild(createAssetThumb('npc', d.e, d.n)));
       customAssets.filter(a=>a.type==='prop').forEach(a => pGrid.appendChild(createAssetThumb('prop', a.e, a.n, a.hp, a.isImg)));
       
       const eGrid = document.getElementById('grid-enemies'); eGrid.innerHTML = '';
@@ -573,7 +616,6 @@
       return el;
     }
 
-    /* UPLOAD CUSTOM MODAL LOGIC */
     document.getElementById('upload-s-type').addEventListener('change', function() { document.getElementById('upload-s-hp').style.display = this.value === 'enemy' ? 'block' : 'none'; });
     
     function confirmUploadSprite() {
@@ -598,7 +640,7 @@
         renderPlayers(); data.emoji = item.e; data.name = item.n; data.type = 'prop'; data.isImg = false;
       }
 
-      const sd = { x: e.clientX - 35, y: e.clientY - 35, scale: 1.0, emoji: data.emoji, name: data.name, isImg: data.isImg, isEnemy: data.type === 'enemy', hp: 0, maxHp: 0 };
+      const sd = { x: e.clientX - 35, y: e.clientY - 35, scale: 1.0, emoji: data.emoji, name: data.name, isImg: data.isImg, isEnemy: data.type === 'enemy', isNpc: data.type === 'npc', hp: 0, maxHp: 0 };
       if (sd.isEnemy) { sd.maxHp = data.hp; sd.hp = sd.maxHp; }
       
       const sp = buildSprite(sd); document.getElementById('map-view').appendChild(sp);
@@ -607,6 +649,7 @@
     function buildSprite(sd) {
       const sp = document.createElement('div'); sp.className = 'sprite';
       sp.style.left = sd.x + 'px'; sp.style.top = sd.y + 'px'; sp.setAttribute('data-scale', sd.scale);
+      if(sd.isNpc) sp.setAttribute('data-npc', 'true');
 
       let content = sd.isImg ? `<img src="${sd.emoji}" class="sprite-img">` : `<div class="sprite-emoji">${sd.emoji}</div>`;
       let html = `${content}<div class="sprite-label">${sd.name}</div>`;
@@ -619,6 +662,14 @@
       sp.innerHTML = html;
       sp.querySelector('.sprite-img, .sprite-emoji').style.transform = `scale(${sd.scale})`;
 
+      sp.ondblclick = (e) => {
+        if(sd.isNpc || sp.hasAttribute('data-npc')) {
+          e.stopPropagation();
+          const line = npcLines[Math.floor(Math.random() * npcLines.length)];
+          spawnFloatText(sp, `"${line}"`, '#f1c40f');
+        }
+      };
+
       let isDrag = false, ox, oy;
       sp.onmousedown = (e) => {
         if (e.button === 2) { 
@@ -630,7 +681,6 @@
           return; 
         } 
         
-        // DM Mode: Left click apply damage
         if (document.body.classList.contains('mode-dm') && pendingEnemyDamage > 0 && sd.isEnemy) {
           applyDamage(sp, pendingEnemyDamage); pendingEnemyDamage = 0; document.body.classList.remove('damage-mode');
           return;
@@ -666,7 +716,7 @@
         let amt = action === 'dmg' ? -val : val; hp = Math.max(0, Math.min(maxHp, hp + amt));
         sp.setAttribute('data-hp', hp); sp.querySelector('.hp-bar-fill').style.width = `${(hp/maxHp)*100}%`;
         spawnFloatText(sp, action === 'dmg' ? `-${val}` : `+${val}`, action === 'dmg' ? '#ff3333' : '#27ae60');
-        if (hp <= 0) ctxAction('delete', 0); // Execute instantly via context menu doesn't give XP currently to keep it simple, normal left click does.
+        if (hp <= 0) ctxAction('delete', 0); 
       }
       ctxTargetSprite = null;
     }
@@ -719,6 +769,12 @@
       closeModal('modal-edit-player'); renderPlayers();
     }
 
+    function deletePlayer(idx) {
+      players.splice(idx, 1);
+      if (activePlayerId && !players.find(p => p.id === activePlayerId)) { activePlayerId = players.length ? players[0].id : null; }
+      renderPlayers();
+    }
+
     function renderPlayers() {
       const list = document.getElementById('players-list'); list.innerHTML = '';
       players.forEach((p, index) => {
@@ -741,7 +797,8 @@
 
         b.innerHTML = `
           <button class="p-edit-btn" onclick="event.stopPropagation(); openEditPlayer(${index})">✎</button>
-          <div class="flex-between" style="padding-right: 20px;">
+          <button class="p-del-btn" onclick="event.stopPropagation(); deletePlayer(${index})">✖</button>
+          <div class="flex-between" style="padding-right: 40px;">
             <span style="cursor:grab; font-family:var(--font-header); font-size:16px;" draggable="true" ondragstart="event.dataTransfer.setData('application/json', JSON.stringify({type:'prop', emoji:'${p.color}', name:'${p.name}'}))">${p.color} <strong>${p.name}</strong></span>
             <span style="font-size:12px; color:#aaa;">Lvl ${p.level}</span>
           </div>
